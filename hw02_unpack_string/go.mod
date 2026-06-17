@@ -1,8 +1,8 @@
-module github.com/fixme_my_friend/hw02_unpack_string
+module github.com/shidemere/2026-05-golang-professional/hw02_unpack_string
 
-go 1.23
+go 1.26.4
 
-require github.com/stretchr/testify v1.10.0
+require github.com/stretchr/testify v1.11.1
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
