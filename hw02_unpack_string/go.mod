@@ -1,6 +1,6 @@
 module github.com/shidemere/2026-05-golang-professional/hw02_unpack_string
 
-go 1.26.4
+go 1.23
 
 require github.com/stretchr/testify v1.11.1
 
