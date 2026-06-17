@@ -29,9 +29,8 @@ jobs:
       - name: Linters
         uses: golangci/golangci-lint-action@v3
         with:
-          version: ${{ env.GOLANGCI_LINT_VERSION }}
-          working-directory: ${{ env.BRANCH }}
-
+          working-directory: .  # запускаем из корня
+          args: ./${{ env.BRANCH }}/...  # проверяем только папку с домашкой
   tests:
     runs-on: ubuntu-latest
     if: ${{ !contains(github.ref, 'calendar') }}
