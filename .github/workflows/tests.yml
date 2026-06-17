@@ -8,8 +8,8 @@ on:
 env:
   GO111MODULE: "on"
   GOLANG_VERSION: ~1.23
-  GOLANGCI_LINT_VERSION: v1.63.4
-  
+  GOLANGCI_LINT_VERSION: v2.0.0
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -27,10 +27,12 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Linters
-        uses: golangci/golangci-lint-action@v3
+        uses: golangci/golangci-lint-action@v6  # v3 не поддерживает v2, используйте v6
         with:
-          working-directory: .  # запускаем из корня
-          args: ./${{ env.BRANCH }}/...  # проверяем только папку с домашкой
+          version: ${{ env.GOLANGCI_LINT_VERSION }}
+          working-directory: .
+          args: --config=.golangci.yml ./${{ env.BRANCH }}/...
+
   tests:
     runs-on: ubuntu-latest
     if: ${{ !contains(github.ref, 'calendar') }}
