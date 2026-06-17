@@ -27,7 +27,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Linters
-        uses: golangci/golangci-lint-action@v6  # v3 не поддерживает v2, используйте v6
+        uses: golangci/golangci-lint-action@v7  # v3 не поддерживает v2, используйте v6
         with:
           version: ${{ env.GOLANGCI_LINT_VERSION }}
           working-directory: .
