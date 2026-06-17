@@ -1,5 +1,5 @@
 // Package unpack is a package for work with strings
-package unpack
+package main
 
 import (
 	"errors"

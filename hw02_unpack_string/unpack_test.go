@@ -1,4 +1,4 @@
-package unpack
+package main
 
 import (
 	"errors"
@@ -14,10 +14,12 @@ func TestUnpack(t *testing.T) {
 	}{
 		{input: "a4bc2d5e", expected: "aaaabccddddde"},
 		{input: "abccd", expected: "abccd"},
+		{input: "a3bccd", expected: "aaabccd"},
 		{input: "", expected: ""},
 		{input: "aaa0b", expected: "aab"},
 		{input: "🙃0", expected: ""},
 		{input: "aaф0b", expected: "aab"},
+		{input: "хххх1", expected: "хххх"},
 		// uncomment if task with asterisk completed
 		// {input: `qwe\4\5`, expected: `qwe45`},
 		// {input: `qwe\45`, expected: `qwe44444`},
