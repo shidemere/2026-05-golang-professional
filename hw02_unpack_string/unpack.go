@@ -1,5 +1,5 @@
-// Package unpack is a package for work with strings
-package main
+// Package hw02unpackstring is a package for work with strings
+package hw02unpackstring
 
 import (
 	"errors"
