@@ -47,10 +47,8 @@ linters:
     - unparam
     - unused
     - whitespace
+
   settings:
-    funlen:
-      lines: 150
-      statements: 80
     depguard:
       rules:
         Main:
@@ -65,17 +63,3 @@ linters:
           allow:
             - $gostd
             - github.com/stretchr/testify
-  exclusions:
-    rules:
-      - path: _test\.go
-        linters:
-          - errcheck
-          - dupl
-          - gocyclo
-          - gosec
-
-formatters:
-  enable:
-    - gci
-    - gofmt
-    - gofumpt
