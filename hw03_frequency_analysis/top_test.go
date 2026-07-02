@@ -42,6 +42,7 @@ var text = `Как видите, он  спускается  по  лестни�
 	иногда,  особенно  когда  папа  дома,  он больше любит тихонько
 	посидеть у огня и послушать какую-нибудь интересную сказку.
 		В этот вечер...`
+var lexinput = "ББ ББ АА АА ББ АА"
 
 func TestTop10(t *testing.T) {
 	t.Run("no words in empty string", func(t *testing.T) {
@@ -78,5 +79,13 @@ func TestTop10(t *testing.T) {
 			}
 			require.Equal(t, expected, Top10(text))
 		}
+	})
+
+	t.Run("test lexicographical sort", func(t *testing.T) {
+		expected := []string{
+			"АА", // 3
+			"ББ", // 3
+		}
+		require.Equal(t, expected, Top10(lexinput))
 	})
 }

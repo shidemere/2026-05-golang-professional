@@ -1,4 +1,4 @@
-module github.com/shidemere/hw03_frequency_analysis
+module github.com/shidemere/2026-05-golang-professional/hw03_frequency_analysis
 
 go 1.23
 
