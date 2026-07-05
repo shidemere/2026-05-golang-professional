@@ -50,7 +50,61 @@ func TestCache(t *testing.T) {
 	})
 
 	t.Run("purge logic", func(t *testing.T) {
-		// Write me
+		c := NewCache(2)
+
+		require.False(t, c.Set("first", 1))
+		require.False(t, c.Set("second", 2))
+
+		val, ok := c.Get("first")
+		require.True(t, ok)
+		require.Equal(t, 1, val)
+
+		require.False(t, c.Set("third", 3))
+
+		val, ok = c.Get("second")
+		require.False(t, ok)
+		require.Nil(t, val)
+
+		val, ok = c.Get("first")
+		require.True(t, ok)
+		require.Equal(t, 1, val)
+
+		val, ok = c.Get("third")
+		require.True(t, ok)
+		require.Equal(t, 3, val)
+	})
+
+	t.Run("update existing item does not evict another key", func(t *testing.T) {
+		c := NewCache(2)
+
+		require.False(t, c.Set("first", 1))
+		require.False(t, c.Set("second", 2))
+		require.True(t, c.Set("first", 10))
+
+		val, ok := c.Get("first")
+		require.True(t, ok)
+		require.Equal(t, 10, val)
+
+		val, ok = c.Get("second")
+		require.True(t, ok)
+		require.Equal(t, 2, val)
+	})
+
+	t.Run("clear removes all items", func(t *testing.T) {
+		c := NewCache(2)
+
+		require.False(t, c.Set("first", 1))
+		require.False(t, c.Set("second", 2))
+
+		c.Clear()
+
+		val, ok := c.Get("first")
+		require.False(t, ok)
+		require.Nil(t, val)
+
+		val, ok = c.Get("second")
+		require.False(t, ok)
+		require.Nil(t, val)
 	})
 }
 

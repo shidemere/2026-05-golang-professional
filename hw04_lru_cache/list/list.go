@@ -55,32 +55,21 @@ func (l *list) Len() int {
 
 // MoveToFront .
 func (l *list) MoveToFront(i *Item) {
-	if i == l.head {
+	if i == nil || i == l.head {
 		return
 	}
 
 	if i == l.tail {
-		newTail := l.tail.Prev
-
-		l.tail.Prev.Next = nil
-		i.Prev = nil
-		l.head.Prev = i
-		l.tail = newTail
-		preh := l.head
-		l.head = i
-		i.Next = preh
-		return
+		l.tail = i.Prev
+	} else {
+		i.Next.Prev = i.Prev
 	}
-	// first we need to connect two Node around
-	n := i.Next
-	p := i.Prev
-	n.Prev = p
-	p.Next = n
-	// second - we need to move item to front
+
+	i.Prev.Next = i.Next
+	i.Prev = nil
+	i.Next = l.head
 	l.head.Prev = i
-	preh := l.head
 	l.head = i
-	i.Next = preh
 }
 
 // PushBack add element in the end of list.
@@ -122,13 +111,25 @@ func (l *list) PushFront(v any) *Item {
 
 // Remove the given (i) from List.
 func (l *list) Remove(i *Item) {
+	if i == nil {
+		return
+	}
+
 	if i == l.head {
 		l.head = i.Next
+		if l.head != nil {
+			l.head.Prev = nil
+		} else {
+			l.tail = nil
+		}
 		l.len--
 		return
 	}
 	if i == l.tail {
 		l.tail = i.Prev
+		if l.tail != nil {
+			l.tail.Next = nil
+		}
 		l.len--
 		return
 	}
@@ -136,5 +137,7 @@ func (l *list) Remove(i *Item) {
 	p := i.Prev
 	n.Prev = p
 	p.Next = n
+	i.Next = nil
+	i.Prev = nil
 	l.len--
 }

@@ -24,14 +24,17 @@ type lruCache struct {
 	mu       sync.RWMutex
 }
 
+type cacheItem struct {
+	key   Key
+	value any
+}
+
 // Clear allows us to clear cache.
 func (l *lruCache) Clear() {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	for _, v := range l.items {
-		l.queue.Remove(v)
-	}
+	l.queue = list.NewList()
 	clear(l.items)
 }
 
@@ -46,7 +49,7 @@ func (l *lruCache) Get(key Key) (any, bool) {
 	}
 
 	l.queue.MoveToFront(i)
-	return i.Value, true
+	return i.Value.(cacheItem).value, true
 }
 
 // Set allows add any value to the cache by key and return flag of existing.
@@ -66,24 +69,28 @@ func (l *lruCache) Set(key Key, value any) bool {
 }
 
 func updateInCache(i *list.Item, value any, l *lruCache) {
-	if i.Value != value {
-		l.queue.MoveToFront(i)
-		i.Value = value
-	} else {
-		l.queue.MoveToFront(i)
+	item := i.Value.(cacheItem)
+	if item.value != value {
+		item.value = value
+		i.Value = item
 	}
+	l.queue.MoveToFront(i)
 }
 
 func addToCache(l *lruCache, key Key, value any) bool {
-	if l.capacity == l.queue.Len() {
-		l.queue.Remove(l.queue.Back())
-		delete(l.items, key)
-		val := l.queue.PushFront(value)
-		l.items[key] = val
-	} else {
-		val := l.queue.PushFront(value)
-		l.items[key] = val
+	if l.capacity == 0 {
+		return false
 	}
+
+	if l.capacity == l.queue.Len() {
+		evicted := l.queue.Back()
+		delete(l.items, evicted.Value.(cacheItem).key)
+		l.queue.Remove(evicted)
+	}
+
+	val := l.queue.PushFront(cacheItem{key: key, value: value})
+	l.items[key] = val
+
 	return false
 }
 

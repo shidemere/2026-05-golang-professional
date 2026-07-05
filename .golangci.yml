@@ -73,6 +73,9 @@ linters:
           - dupl
           - gocyclo
           - gosec
+      - path: ^hw04_lru_cache/
+        linters:
+          - depguard
 
 formatters:
   enable:

@@ -48,4 +48,27 @@ func TestList(t *testing.T) {
 		}
 		require.Equal(t, []int{70, 80, 60, 40, 10, 30, 50}, elems)
 	})
+
+	t.Run("remove front and back keeps links consistent", func(t *testing.T) {
+		l := NewList()
+
+		first := l.PushBack(10)
+		middle := l.PushBack(20)
+		last := l.PushBack(30)
+
+		l.Remove(first)
+		require.Equal(t, 2, l.Len())
+		require.Same(t, middle, l.Front())
+		require.Nil(t, l.Front().Prev)
+
+		l.Remove(last)
+		require.Equal(t, 1, l.Len())
+		require.Same(t, middle, l.Back())
+		require.Nil(t, l.Back().Next)
+
+		l.Remove(middle)
+		require.Equal(t, 0, l.Len())
+		require.Nil(t, l.Front())
+		require.Nil(t, l.Back())
+	})
 }
