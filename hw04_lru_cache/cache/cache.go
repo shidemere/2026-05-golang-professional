@@ -61,7 +61,8 @@ func (l *lruCache) Set(key Key, value any) bool {
 	if !ok {
 		// need to add if doesn't exist
 		// if max -> we need push out last item from the list
-		return addToCache(l, key, value)
+		addToCache(l, key, value)
+		return false
 	}
 	// update value if it's nedd
 	updateInCache(i, value, l)
@@ -77,9 +78,9 @@ func updateInCache(i *list.Item, value any, l *lruCache) {
 	l.queue.MoveToFront(i)
 }
 
-func addToCache(l *lruCache, key Key, value any) bool {
+func addToCache(l *lruCache, key Key, value any) {
 	if l.capacity == 0 {
-		return false
+		return
 	}
 
 	if l.capacity == l.queue.Len() {
@@ -90,8 +91,6 @@ func addToCache(l *lruCache, key Key, value any) bool {
 
 	val := l.queue.PushFront(cacheItem{key: key, value: value})
 	l.items[key] = val
-
-	return false
 }
 
 // NewCache creates a new cache.
