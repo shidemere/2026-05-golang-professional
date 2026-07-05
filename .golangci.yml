@@ -80,4 +80,3 @@ formatters:
     - gci
     - gofmt
     - gofumpt
-            - github.com/stretchr/testify
