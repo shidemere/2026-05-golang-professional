@@ -21,7 +21,7 @@ type lruCache struct {
 	capacity int
 	queue    list.List
 	items    map[Key]*list.Item
-	mu       sync.RWMutex
+	mu       sync.Mutex
 }
 
 type cacheItem struct {
@@ -40,8 +40,8 @@ func (l *lruCache) Clear() {
 
 // Get allows us to get any value from cache.
 func (l *lruCache) Get(key Key) (any, bool) {
-	l.mu.RLock()
-	defer l.mu.RUnlock()
+	l.mu.Lock()
+	defer l.mu.Unlock()
 
 	i, ok := l.items[key]
 	if !ok {
