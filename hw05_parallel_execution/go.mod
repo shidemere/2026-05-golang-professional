@@ -1,6 +1,6 @@
-module github.com/fixme_my_friend/hw05_parallel_execution
+module github.com/shidemere/2026-05-golang-profesional/hw05_parallel_execution
 
-go 1.23
+go 1.26
 
 require (
 	github.com/stretchr/testify v1.7.0
