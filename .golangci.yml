@@ -63,3 +63,20 @@ linters:
           allow:
             - $gostd
             - github.com/stretchr/testify
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - errcheck
+          - dupl
+          - gocyclo
+          - gosec
+      - path: ^hw04_lru_cache/
+        linters:
+          - depguard
+
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
