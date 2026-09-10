@@ -63,6 +63,7 @@ linters:
           allow:
             - $gostd
             - github.com/stretchr/testify
+            - go.uber.org/goleak
   exclusions:
     rules:
       - path: _test\.go
