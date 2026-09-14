@@ -1,9 +1,10 @@
 package hw05parallelexecution
 
 import (
+	"crypto/rand"
 	"errors"
 	"fmt"
-	"math/rand"
+	"math/big"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -15,56 +16,79 @@ import (
 func TestRun(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
-	t.Run("if were errors in first M tasks, than finished not more N+M tasks", func(t *testing.T) {
-		tasksCount := 50
-		tasks := make([]Task, 0, tasksCount)
+	t.Run("stops after reaching the error limit", testRunErrorLimit)
+	t.Run("returns error for non-positive worker count", testRunNonPositiveWorkers)
+	t.Run("returns error for negative error limit", testRunNegativeErrorLimit)
+	t.Run("runs tasks concurrently without errors", testRunConcurrentlyWithoutErrors)
+}
 
-		var runTasksCount int32
+func testRunErrorLimit(t *testing.T) {
+	tasksCount := 50
+	tasks := make([]Task, 0, tasksCount)
 
-		for i := 0; i < tasksCount; i++ {
-			err := fmt.Errorf("error from task %d", i)
-			tasks = append(tasks, func() error {
-				time.Sleep(time.Millisecond * time.Duration(rand.Intn(100)))
-				atomic.AddInt32(&runTasksCount, 1)
-				return err
-			})
-		}
+	var runTasksCount int32
 
-		workersCount := 10
-		maxErrorsCount := 23
-		err := Run(tasks, workersCount, maxErrorsCount)
+	for i := 0; i < tasksCount; i++ {
+		err := fmt.Errorf("error from task %d", i)
+		tasks = append(tasks, func() error {
+			rand, _ := rand.Int(rand.Reader, big.NewInt(100))
+			time.Sleep(time.Millisecond * time.Duration(rand.Int64()))
+			atomic.AddInt32(&runTasksCount, 1)
+			return err
+		})
+	}
 
-		require.Truef(t, errors.Is(err, ErrErrorsLimitExceeded), "actual err - %v", err)
-		require.LessOrEqual(t, runTasksCount, int32(workersCount+maxErrorsCount), "extra tasks were started")
-	})
+	workersCount := 10
+	maxErrorsCount := 23
+	err := Run(tasks, workersCount, maxErrorsCount)
 
-	t.Run("tasks without errors", func(t *testing.T) {
-		tasksCount := 50
-		tasks := make([]Task, 0, tasksCount)
+	require.Truef(t, errors.Is(err, ErrErrorsLimitExceeded), "actual err - %v", err)
+	require.LessOrEqual(t, runTasksCount, int32(workersCount+maxErrorsCount), "extra tasks were started")
+}
 
-		var runTasksCount int32
-		var sumTime time.Duration
+func testRunNonPositiveWorkers(t *testing.T) {
+	tasks := []Task{func() error { return nil }}
 
-		for i := 0; i < tasksCount; i++ {
-			taskSleep := time.Millisecond * time.Duration(rand.Intn(100))
-			sumTime += taskSleep
+	err := Run(tasks, -5, 10)
 
-			tasks = append(tasks, func() error {
-				time.Sleep(taskSleep)
-				atomic.AddInt32(&runTasksCount, 1)
-				return nil
-			})
-		}
+	require.ErrorIs(t, err, ErrNegativeOrZeroWorkersCount)
+}
 
-		workersCount := 5
-		maxErrorsCount := 1
+func testRunNegativeErrorLimit(t *testing.T) {
+	tasks := []Task{func() error { return nil }}
 
-		start := time.Now()
-		err := Run(tasks, workersCount, maxErrorsCount)
-		elapsedTime := time.Since(start)
-		require.NoError(t, err)
+	err := Run(tasks, 5, -10)
 
-		require.Equal(t, int32(tasksCount), runTasksCount, "not all tasks were completed")
-		require.LessOrEqual(t, int64(elapsedTime), int64(sumTime/2), "tasks were run sequentially?")
-	})
+	require.ErrorIs(t, err, ErrNegativeMaxErrorCount)
+}
+
+func testRunConcurrentlyWithoutErrors(t *testing.T) {
+	tasksCount := 50
+	tasks := make([]Task, 0, tasksCount)
+
+	var runTasksCount int32
+	var sumTime time.Duration
+
+	for i := 0; i < tasksCount; i++ {
+		rand, _ := rand.Int(rand.Reader, big.NewInt(100))
+		taskSleep := time.Millisecond * time.Duration(rand.Int64())
+		sumTime += taskSleep
+
+		tasks = append(tasks, func() error {
+			time.Sleep(taskSleep)
+			atomic.AddInt32(&runTasksCount, 1)
+			return nil
+		})
+	}
+
+	workersCount := 5
+	maxErrorsCount := 1
+
+	start := time.Now()
+	err := Run(tasks, workersCount, maxErrorsCount)
+	elapsedTime := time.Since(start)
+	require.NoError(t, err)
+
+	require.Equal(t, int32(tasksCount), runTasksCount, "not all tasks were completed")
+	require.LessOrEqual(t, int64(elapsedTime), int64(sumTime/2), "tasks were run sequentially?")
 }
