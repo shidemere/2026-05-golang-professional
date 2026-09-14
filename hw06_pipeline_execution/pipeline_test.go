@@ -14,6 +14,7 @@ const (
 	fault         = sleepPerStage / 2
 )
 
+//nolint:funlen
 func TestPipeline(t *testing.T) {
 	// Stage generator
 	g := func(_ string, f func(v interface{}) interface{}) Stage {
@@ -145,6 +146,5 @@ func TestAllStageStop(t *testing.T) {
 		wg.Wait()
 
 		require.Len(t, result, 0)
-
 	})
 }
