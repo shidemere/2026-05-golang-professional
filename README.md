@@ -3,7 +3,7 @@
 2) [«Распаковка строки»](./hw02_unpack_string)
 3) [«Частотный анализ»](./hw03_frequency_analysis)
 4) [«LRU-кэш»](./hw04_lru_cache)
-5) [«Параллельное исполнение»](./hw05_parallel_execution)
+5) [«Параллельное исполнение»](./hw05_parallel_execution) #TODO fix by review comments
 6) [«Пайплайн»](./hw06_pipeline_execution)
 7) [«Утилита для копирования файлов»](./hw07_file_copying)
 8) [«Утилита envdir»](./hw08_envdir_tool)
