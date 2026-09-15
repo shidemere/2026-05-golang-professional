@@ -1,7 +1,9 @@
+// Package main contains code for running program.
 package main
 
 import (
 	"flag"
+	"fmt"
 )
 
 var (
@@ -18,5 +20,9 @@ func init() {
 
 func main() {
 	flag.Parse()
+	err := Copy(from, to, offset, limit)
+	if err != nil {
+		fmt.Printf("something happen: %v", err)
+	}
 	// Place your code here.
 }
