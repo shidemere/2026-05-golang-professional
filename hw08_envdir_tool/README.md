@@ -58,3 +58,25 @@ $ FOO=123 BAR=value command arg1 arg2
 - `os.ReadDir`
 - `bytes.Replace`, `strings.TrimRight`
 - `exec.Command`
+
+### Ручная проверка
+
+В `testdata/env` находятся тестовые переменные:
+
+- `HELLO` — обычное значение;
+- `BAR` — две строки (должна использоваться только первая);
+- `FOO` — содержит байт `0x00` (он должен превратиться в перевод строки);
+- `EMPTY` — строка только из пробела (хвостовые пробелы должны удалиться);
+- `UNSET` — пустой файл (одноимённая переменная должна удалиться).
+
+Безопасная программа `testdata/show-env.sh` ничего не изменяет и только печатает
+аргументы и значения этих переменных. Запуск из корня проекта:
+
+```bash
+go build -o /tmp/go-envdir .
+chmod +x testdata/show-env.sh
+UNSET=old-value /tmp/go-envdir ./testdata/env ./testdata/show-env.sh one two
+```
+
+Для самой простой проверки без вспомогательного скрипта можно использовать
+`/usr/bin/env`: `/tmp/go-envdir ./testdata/env /usr/bin/env`.
