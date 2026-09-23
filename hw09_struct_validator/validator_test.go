@@ -122,10 +122,10 @@ func TestValidationRuleErrors(t *testing.T) {
 		value  interface{}
 		target error
 	}{
-		{"min", struct {
+		{ruleMin, struct {
 			V int `validate:"min:10"`
 		}{9}, ErrMin},
-		{"max", struct {
+		{ruleMax, struct {
 			V int `validate:"max:10"`
 		}{11}, ErrMax},
 		{"integer in", struct {
@@ -134,7 +134,7 @@ func TestValidationRuleErrors(t *testing.T) {
 		{"unicode length", struct {
 			V string `validate:"len:6"`
 		}{"привет"}, nil},
-		{"regexp", struct {
+		{ruleRegexp, struct {
 			V string `validate:"regexp:^\\d+$"`
 		}{"abc"}, ErrRegexp},
 		{"string in", struct {

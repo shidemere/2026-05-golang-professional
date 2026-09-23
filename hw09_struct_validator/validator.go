@@ -11,6 +11,14 @@ import (
 	"unicode/utf8"
 )
 
+const (
+	ruleLen    = "len"
+	ruleRegexp = "regexp"
+	ruleIn     = "in"
+	ruleMin    = "min"
+	ruleMax    = "max"
+)
+
 var (
 	// ErrNotStruct -> receieved not struct value.
 	ErrNotStruct = errors.New("value is not a struct")
@@ -73,11 +81,11 @@ type (
 )
 
 var validationRulesString = map[string]stringRule{
-	"len": validateLen, "regexp": validateRegexp, "in": validateStringIn,
+	ruleLen: validateLen, ruleRegexp: validateRegexp, ruleIn: validateStringIn,
 }
 
 var validationRulesInt = map[string]intRule{
-	"min": validateMin, "max": validateMax, "in": validateIntIn,
+	ruleMin: validateMin, ruleMax: validateMax, ruleIn: validateIntIn,
 }
 
 // Validate check structs with "validate" tag.
@@ -245,12 +253,12 @@ func validateStringIn(value string, args []string) (bool, error) {
 }
 
 func validateMin(value int, args []string) (bool, error) {
-	limit, err := parseSingleIntArgument("min", args)
+	limit, err := parseSingleIntArgument(ruleMin, args)
 	return value >= limit, err
 }
 
 func validateMax(value int, args []string) (bool, error) {
-	limit, err := parseSingleIntArgument("max", args)
+	limit, err := parseSingleIntArgument(ruleMax, args)
 	return value <= limit, err
 }
 
@@ -283,11 +291,11 @@ func parseSingleIntArgument(name string, args []string) (int, error) {
 
 func stringRuleError(name, value string, args []string) error {
 	switch name {
-	case "len":
+	case ruleLen:
 		return fmt.Errorf("%w: %q must contain %s characters", ErrLen, value, args[0])
-	case "regexp":
+	case ruleRegexp:
 		return fmt.Errorf("%w: %q does not match %q", ErrRegexp, value, args[0])
-	case "in":
+	case ruleIn:
 		return fmt.Errorf("%w: %q is not one of %s", ErrStringIn, value, strings.Join(args, ","))
 	default:
 		panic("unreachable string rule")
@@ -296,11 +304,11 @@ func stringRuleError(name, value string, args []string) error {
 
 func intRuleError(name string, value int, args []string) error {
 	switch name {
-	case "min":
+	case ruleMin:
 		return fmt.Errorf("%w: %d must be at least %s", ErrMin, value, args[0])
-	case "max":
+	case ruleMax:
 		return fmt.Errorf("%w: %d must be at most %s", ErrMax, value, args[0])
-	case "in":
+	case ruleIn:
 		return fmt.Errorf("%w: %d is not one of %s", ErrIntIn, value, strings.Join(args, ","))
 	default:
 		panic("unreachable integer rule")
