@@ -1,3 +1,4 @@
+// Package hw10programoptimization for benchmark.
 package hw10programoptimization
 
 import (
