@@ -1,0 +1,16 @@
+goos: linux
+goarch: amd64
+pkg: github.com/shidemere/2026-05-golang-professional/hw10_program_optimization
+cpu: Intel(R) Xeon(R) CPU E5-1650 v3 @ 3.50GHz
+BenchmarkGetDomainStat-12    	      19	  63628673 ns/op	 3812646 B/op	  144383 allocs/op
+BenchmarkGetDomainStat-12    	      16	  62645134 ns/op	 3813249 B/op	  144383 allocs/op
+BenchmarkGetDomainStat-12    	      16	  64111028 ns/op	 3815565 B/op	  144384 allocs/op
+BenchmarkGetDomainStat-12    	      19	  67127977 ns/op	 3814613 B/op	  144384 allocs/op
+BenchmarkGetDomainStat-12    	      16	  64041559 ns/op	 3813282 B/op	  144384 allocs/op
+BenchmarkGetDomainStat-12    	      20	  67510557 ns/op	 3813699 B/op	  144384 allocs/op
+BenchmarkGetDomainStat-12    	      19	  64679853 ns/op	 3810705 B/op	  144383 allocs/op
+BenchmarkGetDomainStat-12    	      18	  62669037 ns/op	 3809328 B/op	  144383 allocs/op
+BenchmarkGetDomainStat-12    	      16	  66875158 ns/op	 3813249 B/op	  144383 allocs/op
+BenchmarkGetDomainStat-12    	      18	  60360151 ns/op	 3813443 B/op	  144383 allocs/op
+PASS
+ok  	github.com/shidemere/2026-05-golang-professional/hw10_program_optimization	23.493s

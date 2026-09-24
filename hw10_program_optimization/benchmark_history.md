@@ -362,3 +362,39 @@ PASS
 ok      github.com/shidemere/2026-05-golang-professional/hw10_program_optimization      3.026s
 ```
 
+
+### Benchstat 
+
+
+Запускал командой 
+
+```shell
+
+ benchstat -ignore pkg hw10-old.txt hw10-new.txt
+
+```
+```
+
+
+Результат
+```text
+benchstat -ignore pkg hw10-old.txt hw10-new.txt
+  goos: linux
+  goarch: amd64
+  cpu: Intel(R) Xeon(R) CPU E5-1650 v3 @ 3.50GHz
+                   │ hw10-old.txt │            hw10-new.txt             │
+                   │    sec/op    │   sec/op     vs base                │
+  GetDomainStat-12   535.83m ± 3%   64.08m ± 5%  -88.04% (p=0.000 n=10)
+
+                   │  hw10-old.txt  │             hw10-new.txt             │
+                   │      B/op      │     B/op      vs base                │
+  GetDomainStat-12   244.559Mi ± 0%   3.637Mi ± 0%  -98.51% (p=0.000 n=10)
+
+                   │ hw10-old.txt │            hw10-new.txt             │
+                   │  allocs/op   │  allocs/op   vs base                │
+  GetDomainStat-12   2643.9k ± 0%   144.4k ± 0%  -94.54% (p=0.000 n=10)
+```
+```
+```
+
+```

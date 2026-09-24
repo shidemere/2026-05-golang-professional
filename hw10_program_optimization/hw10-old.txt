@@ -1,0 +1,16 @@
+goos: linux
+goarch: amd64
+pkg: github.com/fixme_my_friend/hw10_program_optimization
+cpu: Intel(R) Xeon(R) CPU E5-1650 v3 @ 3.50GHz
+BenchmarkGetDomainStat-12    	       2	 547912809 ns/op	256409772 B/op	 2643856 allocs/op
+BenchmarkGetDomainStat-12    	       2	 529353389 ns/op	256429016 B/op	 2643856 allocs/op
+BenchmarkGetDomainStat-12    	       2	 537443918 ns/op	256409644 B/op	 2643854 allocs/op
+BenchmarkGetDomainStat-12    	       2	 532740054 ns/op	256449436 B/op	 2643861 allocs/op
+BenchmarkGetDomainStat-12    	       2	 557157596 ns/op	256483676 B/op	 2643859 allocs/op
+BenchmarkGetDomainStat-12    	       2	 534209518 ns/op	256487336 B/op	 2643864 allocs/op
+BenchmarkGetDomainStat-12    	       2	 511184390 ns/op	256427208 B/op	 2643854 allocs/op
+BenchmarkGetDomainStat-12    	       2	 524015856 ns/op	256391012 B/op	 2643851 allocs/op
+BenchmarkGetDomainStat-12    	       2	 552875791 ns/op	256484688 B/op	 2643861 allocs/op
+BenchmarkGetDomainStat-12    	       2	 538305013 ns/op	256447536 B/op	 2643857 allocs/op
+PASS
+ok  	github.com/fixme_my_friend/hw10_program_optimization	20.657s
