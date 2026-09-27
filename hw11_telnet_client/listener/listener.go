@@ -1,7 +1,9 @@
+// Package main implements a simple TCP listener for manual TELNET testing.
 package main
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"log"
 	"net"
@@ -17,8 +19,11 @@ func handleConnection(conn net.Conn) {
 		if text == "quit" || text == "exit" {
 			break
 		}
-
-		conn.Write([]byte(fmt.Sprintf("Received data from server: '%s'\n", text)))
+		log.Println(text)
+		if _, err := fmt.Fprintf(conn, "Received data from server: '%s'\n", text); err != nil {
+			log.Printf("Cannot write to connection: %v", err)
+			return
+		}
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -29,7 +34,8 @@ func handleConnection(conn net.Conn) {
 }
 
 func main() {
-	l, err := net.Listen("tcp", "0.0.0.0:8081")
+	lc := net.ListenConfig{}
+	l, err := lc.Listen(context.Background(), "tcp", "127.0.0.1:8081")
 	if err != nil {
 		log.Fatalf("Cannot listen: %v", err)
 	}
@@ -38,7 +44,8 @@ func main() {
 	for {
 		conn, err := l.Accept()
 		if err != nil {
-			log.Fatalf("Cannot accept: %v", err)
+			log.Printf("Cannot accept: %v", err)
+			return
 		}
 
 		go handleConnection(conn)
