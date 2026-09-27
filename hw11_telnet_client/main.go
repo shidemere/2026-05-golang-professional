@@ -1,6 +1,17 @@
 package main
 
+import (
+	"io"
+	"log"
+	"os"
+	"time"
+)
+
 func main() {
-	// Place your code here,
-	// P.S. Do not rush to throw context down, think think if it is useful with blocking operation?
+	rc := io.NopCloser(os.Stdin)
+
+	_, err := NewTelnetClient("localhost", "8081", time.Hour, rc, os.Stdout)
+	if err != nil {
+		log.Fatal("Цхьа бид бы хьу")
+	}
 }
