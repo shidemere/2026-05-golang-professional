@@ -1,9 +1,58 @@
 #!/usr/bin/env bash
 set -xeuo pipefail
 
+SERVER_GO=""
+function cleanup() {
+  rm -f go-telnet
+  if [ -n "${SERVER_GO}" ]; then
+    rm -f "${SERVER_GO}"
+  fi
+}
+trap cleanup EXIT
+
 go build -o go-telnet
 
-(echo -e "Hello\nFrom\nNC\n" && cat 2>/dev/null) | nc -l localhost 4242 >/tmp/nc.out &
+SERVER_GO=$(mktemp /tmp/go-telnet-server-XXXXXX.go)
+cat >"${SERVER_GO}" <<'EOF'
+package main
+
+import (
+	"io"
+	"log"
+	"net"
+	"os"
+)
+
+func main() {
+	l, err := net.Listen("tcp", "localhost:4242")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer l.Close()
+
+	conn, err := l.Accept()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer conn.Close()
+
+	if _, err = conn.Write([]byte("Hello\nFrom\nNC\n")); err != nil {
+		log.Fatal(err)
+	}
+
+	out, err := os.Create("/tmp/nc.out")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer out.Close()
+
+	if _, err = io.Copy(out, conn); err != nil {
+		log.Fatal(err)
+	}
+}
+EOF
+
+go run "${SERVER_GO}" &
 NC_PID=$!
 
 sleep 1
@@ -30,5 +79,4 @@ From
 NC'
 fileEquals /tmp/telnet.out "${expected_telnet_out}"
 
-rm -f go-telnet
 echo "PASS"

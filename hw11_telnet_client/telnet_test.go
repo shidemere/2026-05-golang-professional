@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"net"
 	"sync"
@@ -13,7 +14,8 @@ import (
 
 func TestTelnetClient(t *testing.T) {
 	t.Run("basic", func(t *testing.T) {
-		l, err := net.Listen("tcp", "127.0.0.1:")
+		lc := net.ListenConfig{}
+		l, err := lc.Listen(context.Background(), "tcp", "127.0.0.1:")
 		require.NoError(t, err)
 		defer func() { require.NoError(t, l.Close()) }()
 
@@ -29,7 +31,7 @@ func TestTelnetClient(t *testing.T) {
 			timeout, err := time.ParseDuration("10s")
 			require.NoError(t, err)
 
-			client := NewTelnetClient(l.Addr().String(), timeout, io.NopCloser(in), out)
+			client, _ := NewTelnetClient(context.Background(), l.Addr().String(), "99", timeout, io.NopCloser(in), out)
 			require.NoError(t, client.Connect())
 			defer func() { require.NoError(t, client.Close()) }()
 
