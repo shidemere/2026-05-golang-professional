@@ -7,6 +7,7 @@ import (
 	"net"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -27,12 +28,10 @@ func TestTelnetClient(t *testing.T) {
 			in := &bytes.Buffer{}
 			out := &bytes.Buffer{}
 
+			timeout, err := time.ParseDuration("10s")
 			require.NoError(t, err)
 
-			host, port, err := net.SplitHostPort(l.Addr().String())
-			require.NoError(t, err)
-
-			client := NewTelnetClient(context.Background(), host, port, io.NopCloser(in), out)
+			client, _ := NewTelnetClient(context.Background(), l.Addr().String(), "99", timeout, io.NopCloser(in), out)
 			require.NoError(t, client.Connect())
 			defer func() { require.NoError(t, client.Close()) }()
 

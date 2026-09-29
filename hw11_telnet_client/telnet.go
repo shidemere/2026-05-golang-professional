@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
+	"time"
 )
 
 type TelnetClient interface {
@@ -26,16 +28,26 @@ func NewTelnetClient(
 	ctx context.Context,
 	host string,
 	port string,
+	_ time.Duration,
 	in io.ReadCloser,
 	out io.Writer,
-) TelnetClient {
+) (TelnetClient, error) {
+	if host == "" || port == "" {
+		return nil, errors.New("host and port should be defined")
+	}
+
+	address := net.JoinHostPort(host, port)
+	if _, _, err := net.SplitHostPort(host); err == nil {
+		address = host
+	}
+
 	client := &telnetClient{
 		ctx:     ctx,
-		address: net.JoinHostPort(host, port),
+		address: address,
 		in:      in,
 		out:     out,
 	}
-	return client
+	return client, nil
 }
 
 func (t *telnetClient) Connect() error {
