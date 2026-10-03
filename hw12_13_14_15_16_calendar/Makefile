@@ -26,7 +26,7 @@ run-postgres:
 	-e POSTGRES_DB=$(POSTGRES_DB) \
 	-p $(POSTGRES_PORT):5432 \
 	-v postgres-data:/var/lib/postgresql/data \
-	postgres:latest
+	postgres:16
 
 run-rabbit:
 	docker run -d --name $(RABBIT_CONTAINER) \
