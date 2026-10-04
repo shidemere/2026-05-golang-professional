@@ -1,3 +1,4 @@
+// Package main is calendar service entrypoint.
 package main
 
 import (
@@ -55,7 +56,7 @@ func main() {
 		calendar = app.New(logg, eventRepository)
 	}
 
-	server := internalhttp.NewServer(logg, calendar)
+	server := internalhttp.NewServer(logg, calendar, config.ServerConf.Host, config.ServerConf.Port)
 
 	ctx, cancel := signal.NotifyContext(context.Background(),
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)

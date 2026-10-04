@@ -46,7 +46,7 @@ type PostgresConfig struct {
 
 // NewConfig build global configuration with subconfigss.
 func NewConfig(path string) Config {
-	file, err := os.ReadFile(path)
+	file, err := os.ReadFile(path) // #nosec G304 -- config path is provided by service operator.
 	if err != nil {
 		log.Fatalf("can't parse config file: %v", err)
 	}

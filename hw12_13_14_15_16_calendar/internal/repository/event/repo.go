@@ -31,6 +31,14 @@ func (r *Repository) Create(ctx context.Context, event Event) (Event, error) {
 	}
 	defer conn.Release()
 
+	busy, err := r.isDateBusy(ctx, conn, event)
+	if err != nil {
+		return Event{}, err
+	}
+	if busy {
+		return Event{}, ErrDateBusy
+	}
+
 	query := `
 		INSERT INTO events 
 		(id, title, scheduled_at, finished_at, description, user_id, notify_before_seconds) 
@@ -65,15 +73,15 @@ func (r *Repository) Delete(ctx context.Context, id uuid.UUID) error {
 	}
 	defer conn.Release()
 
-	_, err = conn.Exec(ctx, "DELETE FROM events WHERE id = ($1)", id)
+	tag, err := conn.Exec(ctx, "DELETE FROM events WHERE id = ($1)", id)
 	if err != nil {
 		// log.Warn("can't execute request for deleting", "err", err)
 		return fmt.Errorf("can't delete event: %w", err)
 	}
 
-	// if tag.RowsAffected() == 0 {
-	// 	log.LogAttrs(ctx, slog.LevelInfo, "not found user for deleting", slog.String("uuid", id.String()))
-	// }
+	if tag.RowsAffected() == 0 {
+		return ErrEventNotFound
+	}
 
 	return nil
 }
@@ -87,13 +95,21 @@ func (r *Repository) Update(ctx context.Context, event Event) (Event, error) {
 	}
 	defer conn.Release()
 
+	busy, err := r.isDateBusy(ctx, conn, event)
+	if err != nil {
+		return Event{}, err
+	}
+	if busy {
+		return Event{}, ErrDateBusy
+	}
+
 	query := `
 		UPDATE events 
 		SET  title = $2, scheduled_at = $3, finished_at = $4, description = $5, user_id = $6, notify_before_seconds = $7
 		WHERE id = $1
 	`
 
-	_, err = conn.Exec(
+	tag, err := conn.Exec(
 		ctx,
 		query,
 		event.ID,
@@ -107,6 +123,9 @@ func (r *Repository) Update(ctx context.Context, event Event) (Event, error) {
 	if err != nil {
 		// log.Warn("can't update user in database", "event", event, "err", err)
 		return Event{}, fmt.Errorf("can't update event: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return Event{}, ErrEventNotFound
 	}
 	return event, nil
 }
@@ -218,4 +237,27 @@ func (r *Repository) GetByMonth(ctx context.Context, startOfMonth, endOfMonth ti
 	}
 
 	return events, nil
+}
+
+type queryer interface {
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+}
+
+func (r *Repository) isDateBusy(ctx context.Context, q queryer, event Event) (bool, error) {
+	const query = `
+		SELECT EXISTS(
+			SELECT 1
+			FROM events
+			WHERE user_id = $1
+				AND id <> $2
+				AND scheduled_at < $4
+				AND finished_at > $3
+		)
+	`
+
+	var busy bool
+	if err := q.QueryRow(ctx, query, event.UserID, event.ID, event.ScheduledAt, event.FinishedAt).Scan(&busy); err != nil {
+		return false, fmt.Errorf("can't check event date availability: %w", err)
+	}
+	return busy, nil
 }
