@@ -49,6 +49,10 @@ linters:
     - whitespace
 
   settings:
+    tagliatelle:
+      case:
+        rules:
+          yaml: snake
     depguard:
       rules:
         Main:
@@ -73,6 +77,9 @@ linters:
           - gocyclo
           - gosec
       - path: ^hw04_lru_cache/
+        linters:
+          - depguard
+      - path: ^hw12_13_14_15_16_calendar/
         linters:
           - depguard
 
