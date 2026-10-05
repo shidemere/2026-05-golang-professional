@@ -20,6 +20,7 @@ GOOSE_DSN := postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@127.0.0.1:5432/$(P
 GOLANGCI_LINT := $(shell go env GOPATH)/bin/golangci-lint
 GOLANGCI_LINT_DIR := $(dir $(GOLANGCI_LINT))
 GOLANGCI_LINT_VERSION ?= v2.13.0
+GOLANGCI_LINT_VERSION_NUMBER := $(patsubst v%,%,$(GOLANGCI_LINT_VERSION))
 
 #Rabbit
 RABBIT_USER ?= rabbit
@@ -75,7 +76,10 @@ test:
 	GOCACHE=/tmp/go-build-cache go test -race ./internal/...
 
 install-lint-deps:
-	(test -x $(GOLANGCI_LINT)) || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOLANGCI_LINT_DIR) $(GOLANGCI_LINT_VERSION)
+	@if ! $(GOLANGCI_LINT) version 2>/dev/null | grep -q "version $(GOLANGCI_LINT_VERSION_NUMBER)"; then \
+		curl -sSfL https://golangci-lint.run/install.sh -o /tmp/golangci-lint-install.sh && \
+		sh /tmp/golangci-lint-install.sh -b $(GOLANGCI_LINT_DIR) $(GOLANGCI_LINT_VERSION); \
+	fi
 
 lint: install-lint-deps
 	GOCACHE=/tmp/go-build-cache $(GOLANGCI_LINT) run ./...
