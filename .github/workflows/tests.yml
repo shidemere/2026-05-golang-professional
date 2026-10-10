@@ -8,7 +8,7 @@ on:
 env:
   GO111MODULE: "on"
   GOLANG_VERSION: "1.26.x"
-  GOLANGCI_LINT_VERSION: v2.12.2
+  GOLANGCI_LINT_VERSION: v2.13.0
 
 jobs:
   lint:

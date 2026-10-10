@@ -1,5 +1,21 @@
-[logger]
-level = "INFO"
+logger:
+  level: INFO
+  add_source: false
 
+server:
+  host: localhost
+  port: 8080
+
+postgres:
+  host: localhost
+  port: 5435
+  sslmode: disabled
+  # user: sensitive data
+  # password: sensitive data
+  dbname: backend
+  pool_max_conns: 10
+  pool_min_conns: 2
 # TODO
 # ...
+
+use_in_memory: true
