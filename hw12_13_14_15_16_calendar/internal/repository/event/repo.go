@@ -184,7 +184,7 @@ func (r *Repository) GetByWeek(ctx context.Context, startOfWeek, endOfWeek time.
         SELECT id, title, scheduled_at, finished_at, description, user_id, notify_before_seconds   
 				FROM events
         WHERE scheduled_at >= $1
-        AND scheduled_at <= $2
+        AND scheduled_at < $2
         ORDER BY scheduled_at
         `,
 		startOfWeek,
@@ -219,7 +219,7 @@ func (r *Repository) GetByMonth(ctx context.Context, startOfMonth, endOfMonth ti
         SELECT id, title, scheduled_at, finished_at, description, user_id, notify_before_seconds   
 				FROM events
         WHERE scheduled_at >= $1
-        AND scheduled_at <= $2
+        AND scheduled_at < $2
         ORDER BY scheduled_at
         `,
 		startOfMonth,

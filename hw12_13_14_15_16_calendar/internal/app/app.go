@@ -57,7 +57,7 @@ func (a *App) CreateEvent(ctx context.Context, created event.CreateRequest) even
 				Resp: event.Response{},
 			}
 		}
-		a.log.Warn("some shit happen", "err", err)
+		a.log.Warn("error in validation", "err", err)
 		return event.WrapperResponse{
 			Err:  err.Error(),
 			Resp: event.Response{},
@@ -68,7 +68,7 @@ func (a *App) CreateEvent(ctx context.Context, created event.CreateRequest) even
 	e.ID = uuid.New()
 	e, err := a.storage.Create(ctx, e)
 	if err != nil {
-		a.log.Warn("some shit happen", "err", err)
+		a.log.Warn("error occurred in storage while creating", "err", err)
 		return event.WrapperResponse{
 			Err:  err.Error(),
 			Resp: event.Response{},
@@ -85,7 +85,7 @@ func (a *App) UpdateEvent(ctx context.Context, updated event.UpdateRequest) even
 			a.log.Warn("validation error occurred", "validation error", err)
 			return event.WrapperResponse{Err: err.Error(), Resp: event.Response{}}
 		}
-		a.log.Warn("some shit happen", "err", err)
+		a.log.Warn("error in validation", "err", err)
 		return event.WrapperResponse{
 			Err:  err.Error(),
 			Resp: event.Response{},
@@ -95,7 +95,7 @@ func (a *App) UpdateEvent(ctx context.Context, updated event.UpdateRequest) even
 	u := event.FromUpdateRequest(updated)
 	u, err := a.storage.Update(ctx, u)
 	if err != nil {
-		a.log.Warn("some shit happen", "err", err)
+		a.log.Warn("can't update event", "err", err)
 		return event.WrapperResponse{
 			Err:  err.Error(),
 			Resp: event.Response{},
@@ -158,7 +158,7 @@ func (a *App) ListByWeek(ctx context.Context, week time.Time) event.WrapperRespo
 
 	startOfNextWeek := startOfWeek.AddDate(0, 0, 7)
 
-	events, err := a.storage.GetByDay(ctx, startOfWeek, startOfNextWeek)
+	events, err := a.storage.GetByWeek(ctx, startOfWeek, startOfNextWeek)
 	if err != nil {
 		a.log.Warn("can't get events by week", "err", err)
 
@@ -188,7 +188,7 @@ func (a *App) ListByMonth(ctx context.Context, month time.Time) event.WrapperRes
 
 	startOfNextMonth := startOfMonth.AddDate(0, 1, 0)
 
-	events, err := a.storage.GetByDay(ctx, startOfMonth, startOfNextMonth)
+	events, err := a.storage.GetByMonth(ctx, startOfMonth, startOfNextMonth)
 	if err != nil {
 		a.log.Warn("can't get events by month", "err", err)
 

@@ -31,7 +31,6 @@ type ServerConfig struct {
 
 // PostgresConfig contains configuration for postgres database.
 type PostgresConfig struct {
-	// TODO: add typecheck for all configs.
 	Host         string `yaml:"host"`
 	Port         string `yaml:"port"`
 	User         string `yaml:"user"`
@@ -41,8 +40,6 @@ type PostgresConfig struct {
 	PoolMaxConns int    `yaml:"pool_max_conns"`
 	PoolMinConns int    `yaml:"pool_min_conns"`
 }
-
-// TODO: Use defaults.
 
 // NewConfig build global configuration with subconfigss.
 func NewConfig(path string) Config {
@@ -70,6 +67,17 @@ func setEnvVariables(config *Config) error {
 		config.LoggerConf.Level = logLevel
 	}
 
+	err := setupPostgresEnv(config)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func setupPostgresEnv(config *Config) error {
+	if config.UseInMemory {
+		return nil
+	}
 	if dbHost := os.Getenv("POSTGRES_HOST"); dbHost != "" {
 		config.PostgresConf.Host = dbHost
 	} else if config.PostgresConf.Host == "" {
@@ -99,5 +107,6 @@ func setEnvVariables(config *Config) error {
 	} else {
 		return fmt.Errorf("need to specify POSTGRES_PASSWORD for application running")
 	}
+
 	return nil
 }

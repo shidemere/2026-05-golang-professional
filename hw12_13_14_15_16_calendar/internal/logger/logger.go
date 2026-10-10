@@ -31,7 +31,7 @@ func mapLevel(level string) slog.Level {
 	case "error":
 		return slog.LevelError
 	default:
-		fmt.Fprintf(os.Stderr, "can't parse logger lever, using INFO by default")
+		fmt.Fprintf(os.Stderr, "can't parse logger level, using INFO by default\n")
 		return slog.LevelInfo
 	}
 }
