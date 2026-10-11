@@ -10,6 +10,17 @@ POSTGRES_PASSWORD ?= password
 POSTGRES_DB ?= backend
 POSTGRES_PORT ?= 5435
 POSTGRES_CONTAINER := postgres-calendar
+POSTGRES_SSLMODE ?= disable
+
+#Migrations
+MIGRATIONS_DIR ?= ./migrations
+GOOSE_IMAGE ?= golang:1.26
+GOOSE_VERSION ?= latest
+GOOSE_DSN := postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@127.0.0.1:5432/$(POSTGRES_DB)?sslmode=$(POSTGRES_SSLMODE)
+GOLANGCI_LINT := $(shell go env GOPATH)/bin/golangci-lint
+GOLANGCI_LINT_DIR := $(dir $(GOLANGCI_LINT))
+GOLANGCI_LINT_VERSION ?= v2.13.0
+GOLANGCI_LINT_VERSION_NUMBER := $(patsubst v%,%,$(GOLANGCI_LINT_VERSION))
 
 #Rabbit
 RABBIT_USER ?= rabbit
@@ -26,7 +37,7 @@ run-postgres:
 	-e POSTGRES_DB=$(POSTGRES_DB) \
 	-p $(POSTGRES_PORT):5432 \
 	-v postgres-data:/var/lib/postgresql/data \
-	postgres:latest
+	postgres:16
 
 run-rabbit:
 	docker run -d --name $(RABBIT_CONTAINER) \
@@ -40,7 +51,14 @@ build:
 	go build -v -o $(BIN) -ldflags "$(LDFLAGS)" ./cmd/calendar
 
 run: build
-	$(BIN) -config ./configs/config.toml
+	$(BIN) -config ./configs/config.yaml
+
+migrate:
+	docker run --rm \
+		--network container:$(POSTGRES_CONTAINER) \
+		-v $(CURDIR)/$(MIGRATIONS_DIR):/migrations:ro \
+		$(GOOSE_IMAGE) \
+		sh -c 'go install github.com/pressly/goose/v3/cmd/goose@$(GOOSE_VERSION) && goose -dir /migrations postgres "$(GOOSE_DSN)" up'
 
 build-img:
 	docker build \
@@ -55,12 +73,15 @@ version: build
 	$(BIN) version
 
 test:
-	go test -race ./internal/... ./pkg/...
+	GOCACHE=/tmp/go-build-cache go test -race ./internal/...
 
 install-lint-deps:
-	(which golangci-lint > /dev/null) || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.57.2
+	@if ! $(GOLANGCI_LINT) version 2>/dev/null | grep -q "version $(GOLANGCI_LINT_VERSION_NUMBER)"; then \
+		curl -sSfL https://golangci-lint.run/install.sh -o /tmp/golangci-lint-install.sh && \
+		sh /tmp/golangci-lint-install.sh -b $(GOLANGCI_LINT_DIR) $(GOLANGCI_LINT_VERSION); \
+	fi
 
 lint: install-lint-deps
-	golangci-lint run ./...
+	GOCACHE=/tmp/go-build-cache $(GOLANGCI_LINT) run ./...
 
-.PHONY: build run build-img run-img version test lint
+.PHONY: build run migrate build-img run-img version test lint
