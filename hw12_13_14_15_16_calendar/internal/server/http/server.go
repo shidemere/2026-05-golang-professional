@@ -56,7 +56,7 @@ func (s *Server) Start(ctx context.Context) error {
 	address := fmt.Sprintf("%s:%s", s.host, s.port)
 	err := s.s.Start(address)
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
-		s.s.Logger.Error("error occured in web-server", err)
+		s.s.Logger.Error("error occurred in web-server", err)
 		log.Fatalf("closing server")
 	}
 	<-ctx.Done()
