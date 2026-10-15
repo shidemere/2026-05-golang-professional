@@ -19,7 +19,7 @@ type Server struct {
 	port   string
 	logger Logger
 	c      Calendar
-	s      *echo.Echo
+	s      http.ServeMux
 }
 
 // Logger is the logging interface used by HTTP server.
