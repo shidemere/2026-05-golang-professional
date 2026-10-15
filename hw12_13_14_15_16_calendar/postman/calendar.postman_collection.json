@@ -1,0 +1,415 @@
+{
+  "info": {
+    "name": "Calendar HTTP API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Calendar HTTP API basic functionality. Run requests in order, one iteration. Creates an event, lists events by day, week and month, updates the event and deletes it. Saves eventId automatically. baseUrl defaults to http://localhost:8080. See postman/README.md."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "eventId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 CRUD lifecycle",
+      "description": "Run in order. Create generates a unique userId and saves eventId. Update sends the complete event because the current service replaces stored fields.",
+      "item": [
+        {
+          "name": "01 Hello",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/hello",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Greeting\", function () { pm.expect(pm.response.text()).to.eql(\"Hello from server!\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 Create event",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Postman CRUD event\",\n  \"scheduledAt\": \"2026-10-16T10:00:00Z\",\n  \"finishedAt\": \"2026-10-16T11:00:00Z\",\n  \"description\": \"Created by Calendar Postman collection\",\n  \"userId\": \"{{userId}}\",\n  \"notifyBeforeSeconds\": 60\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.unset(\"eventId\");",
+                  "pm.collectionVariables.set(\"userId\", pm.variables.replaceIn(\"{{$guid}}\"));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Content-Type is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\"); });",
+                  "pm.test(\"Created event has UUID and submitted fields\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.id).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);",
+                  "    pm.collectionVariables.set(\"eventId\", response.id);",
+                  "    pm.expect(response.title).to.eql(\"Postman CRUD event\");",
+                  "    pm.expect(Date.parse(response.scheduledAt)).to.eql(Date.parse(\"2026-10-16T10:00:00Z\"));",
+                  "    pm.expect(Date.parse(response.finishedAt)).to.eql(Date.parse(\"2026-10-16T11:00:00Z\"));",
+                  "    pm.expect(response.userId).to.eql(pm.collectionVariables.get(\"userId\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 Get by day",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event/day?date=2026-10-16",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get(\"eventId\")) { throw new Error(\"Run the create request first: eventId is missing\"); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Content-Type is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\"); });",
+                  "pm.test(\"JSON array contains the created event\", function () {",
+                  "    const events = pm.response.json();",
+                  "    pm.expect(events).to.be.an(\"array\");",
+                  "    const ids = events.map(function (event) { return event.id; });",
+                  "    pm.expect(pm.collectionVariables.get(\"eventId\"), \"eventId must be created first\").to.be.a(\"string\").and.not.empty;\n    pm.expect(ids).to.include(pm.collectionVariables.get(\"eventId\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 Get by week",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event/week?date=2026-10-16",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get(\"eventId\")) { throw new Error(\"Run the create request first: eventId is missing\"); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Content-Type is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\"); });",
+                  "pm.test(\"JSON array contains the created event\", function () {",
+                  "    const events = pm.response.json();",
+                  "    pm.expect(events).to.be.an(\"array\");",
+                  "    const ids = events.map(function (event) { return event.id; });",
+                  "    pm.expect(pm.collectionVariables.get(\"eventId\"), \"eventId must be created first\").to.be.a(\"string\").and.not.empty;\n    pm.expect(ids).to.include(pm.collectionVariables.get(\"eventId\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 Get by month",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event/month?date=2026-10-16",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get(\"eventId\")) { throw new Error(\"Run the create request first: eventId is missing\"); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Content-Type is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\"); });",
+                  "pm.test(\"JSON array contains the created event\", function () {",
+                  "    const events = pm.response.json();",
+                  "    pm.expect(events).to.be.an(\"array\");",
+                  "    const ids = events.map(function (event) { return event.id; });",
+                  "    pm.expect(pm.collectionVariables.get(\"eventId\"), \"eventId must be created first\").to.be.a(\"string\").and.not.empty;\n    pm.expect(ids).to.include(pm.collectionVariables.get(\"eventId\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "06 Update event",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Postman CRUD event updated\",\n  \"scheduledAt\": \"2026-10-16T12:00:00Z\",\n  \"finishedAt\": \"2026-10-16T13:00:00Z\",\n  \"description\": \"Created by Calendar Postman collection\",\n  \"userId\": \"{{userId}}\",\n  \"notifyBeforeSeconds\": 60,\n  \"id\": \"{{eventId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get(\"eventId\")) { throw new Error(\"Run the create request first: eventId is missing\"); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Content-Type is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\"); });",
+                  "pm.test(\"Updated fields and ID\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.id).to.eql(pm.collectionVariables.get(\"eventId\"));",
+                  "    pm.expect(response.title).to.eql(\"Postman CRUD event updated\");",
+                  "    pm.expect(Date.parse(response.scheduledAt)).to.eql(Date.parse(\"2026-10-16T12:00:00Z\"));",
+                  "    pm.expect(Date.parse(response.finishedAt)).to.eql(Date.parse(\"2026-10-16T13:00:00Z\"));",
+                  "    pm.expect(response.userId).to.eql(pm.collectionVariables.get(\"userId\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "07 Read updated event",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event/day?date=2026-10-16",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get(\"eventId\")) { throw new Error(\"Run the create request first: eventId is missing\"); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Content-Type is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\"); });",
+                  "pm.test(\"JSON array contains the created event\", function () {",
+                  "    const events = pm.response.json();",
+                  "    pm.expect(events).to.be.an(\"array\");",
+                  "    const ids = events.map(function (event) { return event.id; });",
+                  "    pm.expect(pm.collectionVariables.get(\"eventId\"), \"eventId must be created first\").to.be.a(\"string\").and.not.empty;\n    pm.expect(ids).to.include(pm.collectionVariables.get(\"eventId\"));",
+                  "});",
+                  "pm.test(\"Update persisted\", function () {",
+                  "    const event = pm.response.json().find(function (item) { return item.id === pm.collectionVariables.get(\"eventId\"); });",
+                  "    pm.expect(event.title).to.eql(\"Postman CRUD event updated\");",
+                  "    pm.expect(Date.parse(event.scheduledAt)).to.eql(Date.parse(\"2026-10-16T12:00:00Z\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "08 Delete event",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event?id={{eventId}}",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get(\"eventId\")) { throw new Error(\"Run the create request first: eventId is missing\"); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 202\", function () { pm.response.to.have.status(202); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09 Verify deletion",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event/day?date=2026-10-16",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get(\"eventId\")) { throw new Error(\"Run the create request first: eventId is missing\"); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Successful list or empty result\", function () { pm.expect(pm.response.code).to.be.oneOf([200, 204]); });",
+                  "pm.test(\"Deleted event is absent\", function () {",
+                  "    if (pm.response.code === 204) { pm.expect(pm.response.text()).to.eql(\"\"); return; }",
+                  "    const events = pm.response.json();",
+                  "    pm.expect(events).to.be.an(\"array\");",
+                  "    pm.expect(events.map(function (event) { return event.id; })).not.to.include(pm.collectionVariables.get(\"eventId\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

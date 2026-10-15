@@ -2,9 +2,12 @@ logger:
   level: INFO
   add_source: false
 
-server:
+http_server:
   host: localhost
   port: 8080
+
+grpc_server:
+  port: 9090
 
 postgres:
   host: localhost

@@ -84,4 +84,7 @@ install-lint-deps:
 lint: install-lint-deps
 	GOCACHE=/tmp/go-build-cache $(GOLANGCI_LINT) run ./...
 
-.PHONY: build run migrate build-img run-img version test lint
+generate:
+	go generate ./...
+
+.PHONY: build run migrate build-img run-img version test lint generate
