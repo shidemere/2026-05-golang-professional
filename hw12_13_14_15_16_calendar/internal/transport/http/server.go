@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/labstack/echo/v4"
 	"github.com/shidemere/2026-05-golang-professional/hw12_13_14_15_calendar/internal/repository/event"
 )
 
@@ -19,7 +18,8 @@ type Server struct {
 	port   string
 	logger Logger
 	c      Calendar
-	s      http.ServeMux
+	server *http.Server
+	mux    *http.ServeMux
 }
 
 // Logger is the logging interface used by HTTP server.
@@ -43,7 +43,7 @@ func NewServer(logger Logger, app Calendar, host, port string) *Server {
 	return &Server{
 		logger: logger,
 		c:      app,
-		s:      echo.New(),
+		mux:    http.NewServeMux(),
 		host:   host,
 		port:   port,
 	}
@@ -51,12 +51,18 @@ func NewServer(logger Logger, app Calendar, host, port string) *Server {
 
 // Start server.
 func (s *Server) Start(ctx context.Context) error {
-	s.s.GET("/hello", hello, loggingMiddleware(s.logger))
-	// http.Handle("/hello", loggingMiddleware(http.HandlerFunc(hello)))
+	s.mux.HandleFunc("GET /hello", loggingMiddleware(s.logger, hello))
 	address := fmt.Sprintf("%s:%s", s.host, s.port)
-	err := s.s.Start(address)
+	s.server = &http.Server{
+		Addr:           address,
+		Handler:        s.mux,
+		ReadTimeout:    10 * time.Second,
+		WriteTimeout:   10 * time.Second,
+		MaxHeaderBytes: 1 << 20, // 1MB
+	}
+	err := s.server.ListenAndServe()
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
-		s.s.Logger.Error("error occurred in web-server", err)
+		s.logger.Warn("error occurred in web-server", err)
 		log.Fatalf("closing server")
 	}
 	<-ctx.Done()
@@ -65,7 +71,7 @@ func (s *Server) Start(ctx context.Context) error {
 
 // Stop server.
 func (s *Server) Stop(ctx context.Context) error {
-	err := s.s.Shutdown(ctx)
+	err := s.server.Shutdown(ctx)
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return err
 	}

@@ -1,39 +1,56 @@
 package internalhttp
 
 import (
+	"net"
+	"net/http"
 	"time"
-
-	"github.com/labstack/echo/v4"
 )
 
-func loggingMiddleware(logger Logger) echo.MiddlewareFunc {
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(ctx echo.Context) error {
-			start := time.Now()
+type statusResponseWrapper struct {
+	http.ResponseWriter
+	statusCode int
+}
 
-			req := ctx.Request()
+// Wrapper around writing status code for getting it in middleware.
+// When it will be called in handler - this will work because of polymorfism.
+func (s *statusResponseWrapper) WriteHeader(code int) {
+	s.statusCode = code
+	s.ResponseWriter.WriteHeader(code)
+}
 
-			err := next(ctx)
+// Golang by default set 200 if something was written, so we need to do it to.
+func (s *statusResponseWrapper) Write(b []byte) (int, error) {
+	if s.statusCode == 0 {
+		s.statusCode = 200
+	}
+	return s.ResponseWriter.Write(b)
+}
 
-			res := ctx.Response()
-			status := res.Status
-			if status == 0 {
-				status = 200
-			}
-
-			logger.Info(
-				"request handled",
-				"ip", ctx.RealIP(),
-				"time", start,
-				"method", req.Method,
-				"path", req.URL.RequestURI(),
-				"proto", req.Proto,
-				"status", status,
-				"latency", time.Since(start),
-				"user_agent", req.UserAgent(),
-			)
-
-			return err
+func loggingMiddleware(logger Logger, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		host, _, err := net.SplitHostPort(r.RemoteAddr)
+		if err != nil {
+			logger.Info("can't read ip: ", err)
+			host = "unknown"
 		}
+
+		wrapper := statusResponseWrapper{
+			ResponseWriter: w,
+		}
+
+		next(&wrapper, r)
+
+		logger.Info(
+			"request handled",
+			"ip", host,
+			"time", start,
+			"method", r.Method,
+			"path", r.RequestURI,
+			"proto", r.Proto,
+			"status", w.Header(),
+			"latency", time.Since(start),
+			"user_agent", r.UserAgent(),
+		)
 	}
 }
