@@ -51,7 +51,14 @@ func NewServer(logger Logger, app Calendar, host, port string) *Server {
 
 // Start server.
 func (s *Server) Start(ctx context.Context) error {
+	// handler registration
 	s.mux.HandleFunc("GET /hello", loggingMiddleware(s.logger, hello))
+	s.mux.HandleFunc("POST /event", s.createEvent)
+	s.mux.HandleFunc("PUT /event", s.updateEvent)
+	s.mux.HandleFunc("DELETE /event", s.deleteEvent)
+
+	// TODO: i don't know how i need to define timestamp for get request
+
 	address := fmt.Sprintf("%s:%s", s.host, s.port)
 	s.server = &http.Server{
 		Addr:           address,
