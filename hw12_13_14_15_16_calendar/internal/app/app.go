@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
+	"github.com/labstack/gommon/log"
 	"github.com/shidemere/2026-05-golang-professional/hw12_13_14_15_calendar/internal/repository/event"
 )
 
@@ -133,6 +134,8 @@ func (a *App) ListByDay(ctx context.Context, day time.Time) event.WrapperRespons
 
 	startOfNextDay := startOfDay.AddDate(0, 0, 1)
 
+	log.Info("startOfDay is :", startOfDay)
+	log.Info("startOfNextDay is :", startOfNextDay)
 	events, err := a.storage.GetByDay(ctx, startOfDay, startOfNextDay)
 	if err != nil {
 		a.log.Warn("can't get events by day", "err", err)

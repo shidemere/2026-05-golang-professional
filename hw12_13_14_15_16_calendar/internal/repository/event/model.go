@@ -45,7 +45,7 @@ type UpdateRequest struct {
 // WrapperResponse is wrapper around Response with error.
 type WrapperResponse struct {
 	Err  string   `json:"error,omitempty"`
-	Resp Response `json:"response,omitempty"`
+	Resp Response `json:"response"`
 }
 
 // WrapperResponses is wrapper around Response with error.

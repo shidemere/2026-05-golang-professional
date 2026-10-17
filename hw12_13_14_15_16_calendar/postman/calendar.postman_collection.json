@@ -1,0 +1,1655 @@
+{
+  "info": {
+    "name": "Calendar HTTP API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Local Calendar API regression collection. Run folders in order, one iteration. baseUrl defaults to http://localhost:8080. GET date is YYYY-MM-DD in UTC; week is Monday to next Monday, month is first day to next first day, exclusive end. Created fixtures are deleted on a completed run. Lists must return JSON arrays (200), or 204 when empty. Current implementation defects are deliberately reported as failed tests, not accepted. See postman/README.md."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "eventId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 CRUD lifecycle",
+      "description": "Run in order. Create generates a unique userId and saves eventId. Update sends the complete event because the current service replaces stored fields.",
+      "item": [
+        {
+          "name": "01 Hello",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/hello",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Greeting\", function () { pm.expect(pm.response.text()).to.eql(\"Hello from server!\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 Create event",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Postman CRUD event\",\n  \"scheduledAt\": \"2026-10-16T10:00:00Z\",\n  \"finishedAt\": \"2026-10-16T11:00:00Z\",\n  \"description\": \"Created by Calendar Postman collection\",\n  \"userId\": \"{{userId}}\",\n  \"notifyBeforeSeconds\": 60\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.unset(\"eventId\");",
+                  "pm.collectionVariables.set(\"userId\", pm.variables.replaceIn(\"{{$guid}}\"));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Content-Type is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\"); });",
+                  "pm.test(\"Created event has UUID and submitted fields\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.id).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);",
+                  "    pm.collectionVariables.set(\"eventId\", response.id);",
+                  "    pm.expect(response.title).to.eql(\"Postman CRUD event\");",
+                  "    pm.expect(Date.parse(response.scheduledAt)).to.eql(Date.parse(\"2026-10-16T10:00:00Z\"));",
+                  "    pm.expect(Date.parse(response.finishedAt)).to.eql(Date.parse(\"2026-10-16T11:00:00Z\"));",
+                  "    pm.expect(response.userId).to.eql(pm.collectionVariables.get(\"userId\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 Get by day",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event/day?date=2026-10-16",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get(\"eventId\")) { throw new Error(\"Run the create request first: eventId is missing\"); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Content-Type is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\"); });",
+                  "pm.test(\"JSON array contains expected events and excludes out-of-period events\", function () {",
+                  "    const events = pm.response.json();",
+                  "    pm.expect(events).to.be.an(\"array\");",
+                  "    const ids = events.map(function (event) { return event.id; });",
+                  "    pm.expect(pm.collectionVariables.get(\"eventId\"), \"eventId must be created first\").to.be.a(\"string\").and.not.empty;\n    pm.expect(ids).to.include(pm.collectionVariables.get(\"eventId\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 Get by week",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event/week?date=2026-10-16",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get(\"eventId\")) { throw new Error(\"Run the create request first: eventId is missing\"); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Content-Type is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\"); });",
+                  "pm.test(\"JSON array contains expected events and excludes out-of-period events\", function () {",
+                  "    const events = pm.response.json();",
+                  "    pm.expect(events).to.be.an(\"array\");",
+                  "    const ids = events.map(function (event) { return event.id; });",
+                  "    pm.expect(pm.collectionVariables.get(\"eventId\"), \"eventId must be created first\").to.be.a(\"string\").and.not.empty;\n    pm.expect(ids).to.include(pm.collectionVariables.get(\"eventId\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 Get by month",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event/month?date=2026-10-16",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get(\"eventId\")) { throw new Error(\"Run the create request first: eventId is missing\"); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Content-Type is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\"); });",
+                  "pm.test(\"JSON array contains expected events and excludes out-of-period events\", function () {",
+                  "    const events = pm.response.json();",
+                  "    pm.expect(events).to.be.an(\"array\");",
+                  "    const ids = events.map(function (event) { return event.id; });",
+                  "    pm.expect(pm.collectionVariables.get(\"eventId\"), \"eventId must be created first\").to.be.a(\"string\").and.not.empty;\n    pm.expect(ids).to.include(pm.collectionVariables.get(\"eventId\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "06 Update event",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Postman CRUD event updated\",\n  \"scheduledAt\": \"2026-10-16T12:00:00Z\",\n  \"finishedAt\": \"2026-10-16T13:00:00Z\",\n  \"description\": \"Created by Calendar Postman collection\",\n  \"userId\": \"{{userId}}\",\n  \"notifyBeforeSeconds\": 60,\n  \"id\": \"{{eventId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get(\"eventId\")) { throw new Error(\"Run the create request first: eventId is missing\"); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Content-Type is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\"); });",
+                  "pm.test(\"Updated fields and ID\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.id).to.eql(pm.collectionVariables.get(\"eventId\"));",
+                  "    pm.expect(response.title).to.eql(\"Postman CRUD event updated\");",
+                  "    pm.expect(Date.parse(response.scheduledAt)).to.eql(Date.parse(\"2026-10-16T12:00:00Z\"));",
+                  "    pm.expect(Date.parse(response.finishedAt)).to.eql(Date.parse(\"2026-10-16T13:00:00Z\"));",
+                  "    pm.expect(response.userId).to.eql(pm.collectionVariables.get(\"userId\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "07 Read updated event",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event/day?date=2026-10-16",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get(\"eventId\")) { throw new Error(\"Run the create request first: eventId is missing\"); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Content-Type is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\"); });",
+                  "pm.test(\"JSON array contains expected events and excludes out-of-period events\", function () {",
+                  "    const events = pm.response.json();",
+                  "    pm.expect(events).to.be.an(\"array\");",
+                  "    const ids = events.map(function (event) { return event.id; });",
+                  "    pm.expect(pm.collectionVariables.get(\"eventId\"), \"eventId must be created first\").to.be.a(\"string\").and.not.empty;\n    pm.expect(ids).to.include(pm.collectionVariables.get(\"eventId\"));",
+                  "});",
+                  "pm.test(\"Update persisted\", function () {",
+                  "    const event = pm.response.json().find(function (item) { return item.id === pm.collectionVariables.get(\"eventId\"); });",
+                  "    pm.expect(event.title).to.eql(\"Postman CRUD event updated\");",
+                  "    pm.expect(Date.parse(event.scheduledAt)).to.eql(Date.parse(\"2026-10-16T12:00:00Z\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "08 Delete event",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event?id={{eventId}}",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get(\"eventId\")) { throw new Error(\"Run the create request first: eventId is missing\"); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 202\", function () { pm.response.to.have.status(202); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09 Verify deletion",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event/day?date=2026-10-16",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get(\"eventId\")) { throw new Error(\"Run the create request first: eventId is missing\"); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Successful list or empty result\", function () { pm.expect(pm.response.code).to.be.oneOf([200, 204]); });",
+                  "pm.test(\"Deleted event is absent\", function () {",
+                  "    if (pm.response.code === 204) { pm.expect(pm.response.text()).to.eql(\"\"); return; }",
+                  "    const events = pm.response.json();",
+                  "    pm.expect(events).to.be.an(\"array\");",
+                  "    pm.expect(events.map(function (event) { return event.id; })).not.to.include(pm.collectionVariables.get(\"eventId\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 Period boundaries",
+      "description": "Creates isolated fixtures with unique users. Assertions match saved IDs, not global result counts. Covers inclusive start, exclusive end, Sunday normalization, month normalization and leap February. Selection is based on event start time.",
+      "item": [
+        {
+          "name": "01 Create Before October",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Before October\",\n  \"scheduledAt\": \"2026-09-30T23:59:59Z\",\n  \"finishedAt\": \"2026-10-01T00:00:00Z\",\n  \"description\": \"Created by Calendar Postman collection\",\n  \"userId\": \"{{userId}}\",\n  \"notifyBeforeSeconds\": 60\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.unset(\"beforeMonthId\");",
+                  "pm.collectionVariables.set(\"userId\", pm.variables.replaceIn(\"{{$guid}}\"));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Content-Type is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\"); });",
+                  "pm.test(\"Created event has UUID and submitted fields\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.id).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);",
+                  "    pm.collectionVariables.set(\"beforeMonthId\", response.id);",
+                  "    pm.expect(response.title).to.eql(\"Before October\");",
+                  "    pm.expect(Date.parse(response.scheduledAt)).to.eql(Date.parse(\"2026-09-30T23:59:59Z\"));",
+                  "    pm.expect(Date.parse(response.finishedAt)).to.eql(Date.parse(\"2026-10-01T00:00:00Z\"));",
+                  "    pm.expect(response.userId).to.eql(pm.collectionVariables.get(\"userId\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 Create October start",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"October start\",\n  \"scheduledAt\": \"2026-10-01T00:00:00Z\",\n  \"finishedAt\": \"2026-10-01T00:01:00Z\",\n  \"description\": \"Created by Calendar Postman collection\",\n  \"userId\": \"{{userId}}\",\n  \"notifyBeforeSeconds\": 60\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.unset(\"monthStartId\");",
+                  "pm.collectionVariables.set(\"userId\", pm.variables.replaceIn(\"{{$guid}}\"));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Content-Type is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\"); });",
+                  "pm.test(\"Created event has UUID and submitted fields\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.id).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);",
+                  "    pm.collectionVariables.set(\"monthStartId\", response.id);",
+                  "    pm.expect(response.title).to.eql(\"October start\");",
+                  "    pm.expect(Date.parse(response.scheduledAt)).to.eql(Date.parse(\"2026-10-01T00:00:00Z\"));",
+                  "    pm.expect(Date.parse(response.finishedAt)).to.eql(Date.parse(\"2026-10-01T00:01:00Z\"));",
+                  "    pm.expect(response.userId).to.eql(pm.collectionVariables.get(\"userId\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 Create Monday start",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Monday start\",\n  \"scheduledAt\": \"2026-10-12T00:00:00Z\",\n  \"finishedAt\": \"2026-10-12T00:01:00Z\",\n  \"description\": \"Created by Calendar Postman collection\",\n  \"userId\": \"{{userId}}\",\n  \"notifyBeforeSeconds\": 60\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.unset(\"weekStartId\");",
+                  "pm.collectionVariables.set(\"userId\", pm.variables.replaceIn(\"{{$guid}}\"));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Content-Type is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\"); });",
+                  "pm.test(\"Created event has UUID and submitted fields\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.id).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);",
+                  "    pm.collectionVariables.set(\"weekStartId\", response.id);",
+                  "    pm.expect(response.title).to.eql(\"Monday start\");",
+                  "    pm.expect(Date.parse(response.scheduledAt)).to.eql(Date.parse(\"2026-10-12T00:00:00Z\"));",
+                  "    pm.expect(Date.parse(response.finishedAt)).to.eql(Date.parse(\"2026-10-12T00:01:00Z\"));",
+                  "    pm.expect(response.userId).to.eql(pm.collectionVariables.get(\"userId\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 Create Sunday last second",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Sunday last second\",\n  \"scheduledAt\": \"2026-10-18T23:59:59Z\",\n  \"finishedAt\": \"2026-10-19T00:00:00Z\",\n  \"description\": \"Created by Calendar Postman collection\",\n  \"userId\": \"{{userId}}\",\n  \"notifyBeforeSeconds\": 60\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.unset(\"weekLastId\");",
+                  "pm.collectionVariables.set(\"userId\", pm.variables.replaceIn(\"{{$guid}}\"));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Content-Type is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\"); });",
+                  "pm.test(\"Created event has UUID and submitted fields\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.id).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);",
+                  "    pm.collectionVariables.set(\"weekLastId\", response.id);",
+                  "    pm.expect(response.title).to.eql(\"Sunday last second\");",
+                  "    pm.expect(Date.parse(response.scheduledAt)).to.eql(Date.parse(\"2026-10-18T23:59:59Z\"));",
+                  "    pm.expect(Date.parse(response.finishedAt)).to.eql(Date.parse(\"2026-10-19T00:00:00Z\"));",
+                  "    pm.expect(response.userId).to.eql(pm.collectionVariables.get(\"userId\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 Create Next Monday",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Next Monday\",\n  \"scheduledAt\": \"2026-10-19T00:00:00Z\",\n  \"finishedAt\": \"2026-10-19T00:01:00Z\",\n  \"description\": \"Created by Calendar Postman collection\",\n  \"userId\": \"{{userId}}\",\n  \"notifyBeforeSeconds\": 60\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.unset(\"nextWeekId\");",
+                  "pm.collectionVariables.set(\"userId\", pm.variables.replaceIn(\"{{$guid}}\"));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Content-Type is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\"); });",
+                  "pm.test(\"Created event has UUID and submitted fields\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.id).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);",
+                  "    pm.collectionVariables.set(\"nextWeekId\", response.id);",
+                  "    pm.expect(response.title).to.eql(\"Next Monday\");",
+                  "    pm.expect(Date.parse(response.scheduledAt)).to.eql(Date.parse(\"2026-10-19T00:00:00Z\"));",
+                  "    pm.expect(Date.parse(response.finishedAt)).to.eql(Date.parse(\"2026-10-19T00:01:00Z\"));",
+                  "    pm.expect(response.userId).to.eql(pm.collectionVariables.get(\"userId\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "06 Create October last second",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"October last second\",\n  \"scheduledAt\": \"2026-10-31T23:59:59Z\",\n  \"finishedAt\": \"2026-11-01T00:00:00Z\",\n  \"description\": \"Created by Calendar Postman collection\",\n  \"userId\": \"{{userId}}\",\n  \"notifyBeforeSeconds\": 60\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.unset(\"monthLastId\");",
+                  "pm.collectionVariables.set(\"userId\", pm.variables.replaceIn(\"{{$guid}}\"));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Content-Type is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\"); });",
+                  "pm.test(\"Created event has UUID and submitted fields\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.id).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);",
+                  "    pm.collectionVariables.set(\"monthLastId\", response.id);",
+                  "    pm.expect(response.title).to.eql(\"October last second\");",
+                  "    pm.expect(Date.parse(response.scheduledAt)).to.eql(Date.parse(\"2026-10-31T23:59:59Z\"));",
+                  "    pm.expect(Date.parse(response.finishedAt)).to.eql(Date.parse(\"2026-11-01T00:00:00Z\"));",
+                  "    pm.expect(response.userId).to.eql(pm.collectionVariables.get(\"userId\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "07 Create November start",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"November start\",\n  \"scheduledAt\": \"2026-11-01T00:00:00Z\",\n  \"finishedAt\": \"2026-11-01T00:01:00Z\",\n  \"description\": \"Created by Calendar Postman collection\",\n  \"userId\": \"{{userId}}\",\n  \"notifyBeforeSeconds\": 60\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.unset(\"nextMonthId\");",
+                  "pm.collectionVariables.set(\"userId\", pm.variables.replaceIn(\"{{$guid}}\"));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Content-Type is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\"); });",
+                  "pm.test(\"Created event has UUID and submitted fields\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.id).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);",
+                  "    pm.collectionVariables.set(\"nextMonthId\", response.id);",
+                  "    pm.expect(response.title).to.eql(\"November start\");",
+                  "    pm.expect(Date.parse(response.scheduledAt)).to.eql(Date.parse(\"2026-11-01T00:00:00Z\"));",
+                  "    pm.expect(Date.parse(response.finishedAt)).to.eql(Date.parse(\"2026-11-01T00:01:00Z\"));",
+                  "    pm.expect(response.userId).to.eql(pm.collectionVariables.get(\"userId\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "08 Create Leap day",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Leap day\",\n  \"scheduledAt\": \"2028-02-29T23:59:59Z\",\n  \"finishedAt\": \"2028-03-01T00:00:00Z\",\n  \"description\": \"Created by Calendar Postman collection\",\n  \"userId\": \"{{userId}}\",\n  \"notifyBeforeSeconds\": 60\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.unset(\"leapDayId\");",
+                  "pm.collectionVariables.set(\"userId\", pm.variables.replaceIn(\"{{$guid}}\"));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Content-Type is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\"); });",
+                  "pm.test(\"Created event has UUID and submitted fields\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.id).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);",
+                  "    pm.collectionVariables.set(\"leapDayId\", response.id);",
+                  "    pm.expect(response.title).to.eql(\"Leap day\");",
+                  "    pm.expect(Date.parse(response.scheduledAt)).to.eql(Date.parse(\"2028-02-29T23:59:59Z\"));",
+                  "    pm.expect(Date.parse(response.finishedAt)).to.eql(Date.parse(\"2028-03-01T00:00:00Z\"));",
+                  "    pm.expect(response.userId).to.eql(pm.collectionVariables.get(\"userId\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09 Create March after leap February",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"March after leap February\",\n  \"scheduledAt\": \"2028-03-01T00:00:00Z\",\n  \"finishedAt\": \"2028-03-01T00:01:00Z\",\n  \"description\": \"Created by Calendar Postman collection\",\n  \"userId\": \"{{userId}}\",\n  \"notifyBeforeSeconds\": 60\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.unset(\"afterLeapMonthId\");",
+                  "pm.collectionVariables.set(\"userId\", pm.variables.replaceIn(\"{{$guid}}\"));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Content-Type is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\"); });",
+                  "pm.test(\"Created event has UUID and submitted fields\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.id).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);",
+                  "    pm.collectionVariables.set(\"afterLeapMonthId\", response.id);",
+                  "    pm.expect(response.title).to.eql(\"March after leap February\");",
+                  "    pm.expect(Date.parse(response.scheduledAt)).to.eql(Date.parse(\"2028-03-01T00:00:00Z\"));",
+                  "    pm.expect(Date.parse(response.finishedAt)).to.eql(Date.parse(\"2028-03-01T00:01:00Z\"));",
+                  "    pm.expect(response.userId).to.eql(pm.collectionVariables.get(\"userId\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10 Week containing Friday",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event/week?date=2026-10-16",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Content-Type is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\"); });",
+                  "pm.test(\"JSON array contains expected events and excludes out-of-period events\", function () {",
+                  "    const events = pm.response.json();",
+                  "    pm.expect(events).to.be.an(\"array\");",
+                  "    const ids = events.map(function (event) { return event.id; });",
+                  "    pm.expect(pm.collectionVariables.get(\"weekStartId\"), \"weekStartId must be created first\").to.be.a(\"string\").and.not.empty;\n    pm.expect(ids).to.include(pm.collectionVariables.get(\"weekStartId\"));",
+                  "    pm.expect(pm.collectionVariables.get(\"weekLastId\"), \"weekLastId must be created first\").to.be.a(\"string\").and.not.empty;\n    pm.expect(ids).to.include(pm.collectionVariables.get(\"weekLastId\"));",
+                  "    pm.expect(pm.collectionVariables.get(\"beforeMonthId\"), \"beforeMonthId must be created first\").to.be.a(\"string\").and.not.empty;\n    pm.expect(ids).not.to.include(pm.collectionVariables.get(\"beforeMonthId\"));",
+                  "    pm.expect(pm.collectionVariables.get(\"monthStartId\"), \"monthStartId must be created first\").to.be.a(\"string\").and.not.empty;\n    pm.expect(ids).not.to.include(pm.collectionVariables.get(\"monthStartId\"));",
+                  "    pm.expect(pm.collectionVariables.get(\"nextWeekId\"), \"nextWeekId must be created first\").to.be.a(\"string\").and.not.empty;\n    pm.expect(ids).not.to.include(pm.collectionVariables.get(\"nextWeekId\"));",
+                  "    pm.expect(pm.collectionVariables.get(\"monthLastId\"), \"monthLastId must be created first\").to.be.a(\"string\").and.not.empty;\n    pm.expect(ids).not.to.include(pm.collectionVariables.get(\"monthLastId\"));",
+                  "    pm.expect(pm.collectionVariables.get(\"nextMonthId\"), \"nextMonthId must be created first\").to.be.a(\"string\").and.not.empty;\n    pm.expect(ids).not.to.include(pm.collectionVariables.get(\"nextMonthId\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "11 Week containing Sunday",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event/week?date=2026-10-18",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Content-Type is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\"); });",
+                  "pm.test(\"JSON array contains expected events and excludes out-of-period events\", function () {",
+                  "    const events = pm.response.json();",
+                  "    pm.expect(events).to.be.an(\"array\");",
+                  "    const ids = events.map(function (event) { return event.id; });",
+                  "    pm.expect(pm.collectionVariables.get(\"weekStartId\"), \"weekStartId must be created first\").to.be.a(\"string\").and.not.empty;\n    pm.expect(ids).to.include(pm.collectionVariables.get(\"weekStartId\"));",
+                  "    pm.expect(pm.collectionVariables.get(\"weekLastId\"), \"weekLastId must be created first\").to.be.a(\"string\").and.not.empty;\n    pm.expect(ids).to.include(pm.collectionVariables.get(\"weekLastId\"));",
+                  "    pm.expect(pm.collectionVariables.get(\"beforeMonthId\"), \"beforeMonthId must be created first\").to.be.a(\"string\").and.not.empty;\n    pm.expect(ids).not.to.include(pm.collectionVariables.get(\"beforeMonthId\"));",
+                  "    pm.expect(pm.collectionVariables.get(\"monthStartId\"), \"monthStartId must be created first\").to.be.a(\"string\").and.not.empty;\n    pm.expect(ids).not.to.include(pm.collectionVariables.get(\"monthStartId\"));",
+                  "    pm.expect(pm.collectionVariables.get(\"nextWeekId\"), \"nextWeekId must be created first\").to.be.a(\"string\").and.not.empty;\n    pm.expect(ids).not.to.include(pm.collectionVariables.get(\"nextWeekId\"));",
+                  "    pm.expect(pm.collectionVariables.get(\"monthLastId\"), \"monthLastId must be created first\").to.be.a(\"string\").and.not.empty;\n    pm.expect(ids).not.to.include(pm.collectionVariables.get(\"monthLastId\"));",
+                  "    pm.expect(pm.collectionVariables.get(\"nextMonthId\"), \"nextMonthId must be created first\").to.be.a(\"string\").and.not.empty;\n    pm.expect(ids).not.to.include(pm.collectionVariables.get(\"nextMonthId\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "12 Month containing October 16",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event/month?date=2026-10-16",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Content-Type is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\"); });",
+                  "pm.test(\"JSON array contains expected events and excludes out-of-period events\", function () {",
+                  "    const events = pm.response.json();",
+                  "    pm.expect(events).to.be.an(\"array\");",
+                  "    const ids = events.map(function (event) { return event.id; });",
+                  "    pm.expect(pm.collectionVariables.get(\"monthStartId\"), \"monthStartId must be created first\").to.be.a(\"string\").and.not.empty;\n    pm.expect(ids).to.include(pm.collectionVariables.get(\"monthStartId\"));",
+                  "    pm.expect(pm.collectionVariables.get(\"weekStartId\"), \"weekStartId must be created first\").to.be.a(\"string\").and.not.empty;\n    pm.expect(ids).to.include(pm.collectionVariables.get(\"weekStartId\"));",
+                  "    pm.expect(pm.collectionVariables.get(\"weekLastId\"), \"weekLastId must be created first\").to.be.a(\"string\").and.not.empty;\n    pm.expect(ids).to.include(pm.collectionVariables.get(\"weekLastId\"));",
+                  "    pm.expect(pm.collectionVariables.get(\"nextWeekId\"), \"nextWeekId must be created first\").to.be.a(\"string\").and.not.empty;\n    pm.expect(ids).to.include(pm.collectionVariables.get(\"nextWeekId\"));",
+                  "    pm.expect(pm.collectionVariables.get(\"monthLastId\"), \"monthLastId must be created first\").to.be.a(\"string\").and.not.empty;\n    pm.expect(ids).to.include(pm.collectionVariables.get(\"monthLastId\"));",
+                  "    pm.expect(pm.collectionVariables.get(\"beforeMonthId\"), \"beforeMonthId must be created first\").to.be.a(\"string\").and.not.empty;\n    pm.expect(ids).not.to.include(pm.collectionVariables.get(\"beforeMonthId\"));",
+                  "    pm.expect(pm.collectionVariables.get(\"nextMonthId\"), \"nextMonthId must be created first\").to.be.a(\"string\").and.not.empty;\n    pm.expect(ids).not.to.include(pm.collectionVariables.get(\"nextMonthId\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "13 Sunday includes its last second",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event/day?date=2026-10-18",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Content-Type is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\"); });",
+                  "pm.test(\"JSON array contains expected events and excludes out-of-period events\", function () {",
+                  "    const events = pm.response.json();",
+                  "    pm.expect(events).to.be.an(\"array\");",
+                  "    const ids = events.map(function (event) { return event.id; });",
+                  "    pm.expect(pm.collectionVariables.get(\"weekLastId\"), \"weekLastId must be created first\").to.be.a(\"string\").and.not.empty;\n    pm.expect(ids).to.include(pm.collectionVariables.get(\"weekLastId\"));",
+                  "    pm.expect(pm.collectionVariables.get(\"weekStartId\"), \"weekStartId must be created first\").to.be.a(\"string\").and.not.empty;\n    pm.expect(ids).not.to.include(pm.collectionVariables.get(\"weekStartId\"));",
+                  "    pm.expect(pm.collectionVariables.get(\"nextWeekId\"), \"nextWeekId must be created first\").to.be.a(\"string\").and.not.empty;\n    pm.expect(ids).not.to.include(pm.collectionVariables.get(\"nextWeekId\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "14 Leap February includes February 29",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event/month?date=2028-02-15",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Content-Type is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\"); });",
+                  "pm.test(\"JSON array contains expected events and excludes out-of-period events\", function () {",
+                  "    const events = pm.response.json();",
+                  "    pm.expect(events).to.be.an(\"array\");",
+                  "    const ids = events.map(function (event) { return event.id; });",
+                  "    pm.expect(pm.collectionVariables.get(\"leapDayId\"), \"leapDayId must be created first\").to.be.a(\"string\").and.not.empty;\n    pm.expect(ids).to.include(pm.collectionVariables.get(\"leapDayId\"));",
+                  "    pm.expect(pm.collectionVariables.get(\"afterLeapMonthId\"), \"afterLeapMonthId must be created first\").to.be.a(\"string\").and.not.empty;\n    pm.expect(ids).not.to.include(pm.collectionVariables.get(\"afterLeapMonthId\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 Boundary cleanup",
+      "description": "Run after the boundary folder, including when assertions fail. Deletes only the fixture IDs saved by this collection. If execution is stopped, run cleanup manually.",
+      "item": [
+        {
+          "name": "01 Delete Before October",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event?id={{beforeMonthId}}",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get(\"beforeMonthId\")) { throw new Error(\"Run the create request first: beforeMonthId is missing\"); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 202\", function () { pm.response.to.have.status(202); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 Delete October start",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event?id={{monthStartId}}",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get(\"monthStartId\")) { throw new Error(\"Run the create request first: monthStartId is missing\"); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 202\", function () { pm.response.to.have.status(202); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 Delete Monday start",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event?id={{weekStartId}}",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get(\"weekStartId\")) { throw new Error(\"Run the create request first: weekStartId is missing\"); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 202\", function () { pm.response.to.have.status(202); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 Delete Sunday last second",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event?id={{weekLastId}}",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get(\"weekLastId\")) { throw new Error(\"Run the create request first: weekLastId is missing\"); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 202\", function () { pm.response.to.have.status(202); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 Delete Next Monday",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event?id={{nextWeekId}}",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get(\"nextWeekId\")) { throw new Error(\"Run the create request first: nextWeekId is missing\"); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 202\", function () { pm.response.to.have.status(202); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "06 Delete October last second",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event?id={{monthLastId}}",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get(\"monthLastId\")) { throw new Error(\"Run the create request first: monthLastId is missing\"); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 202\", function () { pm.response.to.have.status(202); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "07 Delete November start",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event?id={{nextMonthId}}",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get(\"nextMonthId\")) { throw new Error(\"Run the create request first: nextMonthId is missing\"); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 202\", function () { pm.response.to.have.status(202); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "08 Delete Leap day",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event?id={{leapDayId}}",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get(\"leapDayId\")) { throw new Error(\"Run the create request first: leapDayId is missing\"); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 202\", function () { pm.response.to.have.status(202); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09 Delete March after leap February",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event?id={{afterLeapMonthId}}",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get(\"afterLeapMonthId\")) { throw new Error(\"Run the create request first: afterLeapMonthId is missing\"); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 202\", function () { pm.response.to.have.status(202); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04 Invalid requests",
+      "description": "Expected client errors (400). These tests intentionally expose handlers that write the body before WriteHeader and accidentally return 200.",
+      "item": [
+        {
+          "name": "day: missing date",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event/day",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "day: impossible date",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event/day?date=2026-02-30",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "week: missing date",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event/week",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "week: impossible date",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event/week?date=2026-02-30",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "month: missing date",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event/month",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "month: impossible date",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event/month?date=2026-02-30",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete: missing id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create: malformed JSON",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/event",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\":",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

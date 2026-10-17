@@ -56,8 +56,9 @@ func (s *Server) Start(ctx context.Context) error {
 	s.mux.HandleFunc("POST /event", s.createEvent)
 	s.mux.HandleFunc("PUT /event", s.updateEvent)
 	s.mux.HandleFunc("DELETE /event", s.deleteEvent)
-
-	// TODO: i don't know how i need to define timestamp for get request
+	s.mux.HandleFunc("GET /event/day", s.getByDay)
+	s.mux.HandleFunc("GET /event/week", s.getByWeek)
+	s.mux.HandleFunc("GET /event/month", s.getByMonth)
 
 	address := fmt.Sprintf("%s:%s", s.host, s.port)
 	s.server = &http.Server{
