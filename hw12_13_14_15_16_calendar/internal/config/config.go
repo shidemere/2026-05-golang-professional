@@ -11,10 +11,11 @@ import (
 
 // Config is global configuration for project.
 type Config struct {
-	LoggerConf   LoggerConfig   `yaml:"logger"`
-	ServerConf   ServerConfig   `yaml:"server"`
-	PostgresConf PostgresConfig `yaml:"postgres"`
-	UseInMemory  bool           `yaml:"use_in_memory"`
+	LoggerConf     LoggerConfig     `yaml:"logger"`
+	HTTPServerConf HTTPServerConfig `yaml:"http_server"`
+	GRPCServerConf GRPSServerConfig `yaml:"grpc_server"`
+	PostgresConf   PostgresConfig   `yaml:"postgres"`
+	UseInMemory    bool             `yaml:"use_in_memory"`
 }
 
 // LoggerConfig contains configuration for logger.
@@ -23,9 +24,14 @@ type LoggerConfig struct {
 	AddSource bool   `yaml:"add_source"`
 }
 
-// ServerConfig contains configuration for servecr.
-type ServerConfig struct {
+// HTTPServerConfig contains configuration for HTTP server.
+type HTTPServerConfig struct {
 	Host string `yaml:"host"`
+	Port string `yaml:"port"`
+}
+
+// GRPSServerConfig contains configutration for gRPC server.
+type GRPSServerConfig struct {
 	Port string `yaml:"port"`
 }
 
@@ -61,7 +67,6 @@ func NewConfig(path string) Config {
 	return config
 }
 
-// TODO: Collect this somehow.
 func setEnvVariables(config *Config) error {
 	if logLevel := os.Getenv("LOG_LEVEL"); logLevel != "" {
 		config.LoggerConf.Level = logLevel
