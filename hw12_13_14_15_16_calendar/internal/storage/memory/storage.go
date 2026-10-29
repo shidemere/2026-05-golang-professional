@@ -30,12 +30,12 @@ func (s *Storage) Create(_ context.Context, e event.Event) (event.Event, error) 
 	if s.isDateBusy(e) {
 		return event.Event{}, event.ErrDateBusy
 	}
+	e.Status = event.NewPending()
 	s.cache[e.ID] = e
 	return e, nil
 }
 
 // Update item.
-// TODO: is any way don't get twice?
 func (s *Storage) Update(_ context.Context, e event.Event) (event.Event, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

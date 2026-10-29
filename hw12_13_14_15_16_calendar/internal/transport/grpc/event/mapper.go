@@ -10,7 +10,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func fromCreateToEvent(in *generated.CreateEventRequst) (event.Event, error) {
+func fromCreateToEvent(in *generated.CreateEventRequest) (event.Event, error) {
 	if in == nil {
 		return event.Event{}, fmt.Errorf("event request is required")
 	}

@@ -144,8 +144,9 @@ func (r *Repository) GetByDay(ctx context.Context, startOfDay, startOfNextDay ti
 	rows, err := conn.Query(
 		ctx,
 		`
-        SELECT id, title, scheduled_at, finished_at, description, user_id, notify_before_seconds   
+        SELECT events.id, events.title, events.scheduled_at, events.finished_at, events.description, events.user_id, events.notify_before_seconds, event_status.status
 				FROM events
+				LEFT JOIN event_status ON events.status_id = event_status.id
         WHERE scheduled_at >= $1
         AND scheduled_at < $2
         ORDER BY scheduled_at
@@ -181,8 +182,9 @@ func (r *Repository) GetByWeek(ctx context.Context, startOfWeek, endOfWeek time.
 	rows, err := conn.Query(
 		ctx,
 		`
-        SELECT id, title, scheduled_at, finished_at, description, user_id, notify_before_seconds   
+        SELECT events.id, events.title, events.scheduled_at, events.finished_at, events.description, events.user_id, events.notify_before_seconds, event_status.status
 				FROM events
+				LEFT JOIN event_status ON events.status_id = event_status.id
         WHERE scheduled_at >= $1
         AND scheduled_at < $2
         ORDER BY scheduled_at
@@ -216,8 +218,9 @@ func (r *Repository) GetByMonth(ctx context.Context, startOfMonth, endOfMonth ti
 	rows, err := conn.Query(
 		ctx,
 		`
-        SELECT id, title, scheduled_at, finished_at, description, user_id, notify_before_seconds   
+        SELECT events.id, events.title, events.scheduled_at, events.finished_at, events.description, events.user_id, events.notify_before_seconds, event_status.status
 				FROM events
+				LEFT JOIN event_status ON events.status_id = event_status.id
         WHERE scheduled_at >= $1
         AND scheduled_at < $2
         ORDER BY scheduled_at

@@ -20,7 +20,7 @@ message Event {
 message Events {
   repeated Event event = 1;
 }
-message CreateEventRequst {
+message CreateEventRequest {
   string title = 1;
   google.protobuf.Timestamp scheduled_at = 2;
   google.protobuf.Timestamp finished_at = 3;
@@ -56,7 +56,7 @@ message Month {
 }
 
 service EventService {
-  rpc CreateEvent(CreateEventRequst) returns (Event);
+  rpc CreateEvent(CreateEventRequest) returns (Event);
   rpc UpdateEvent(UpdateEventRequest) returns (Event);
   rpc DeleteEvent(DeleteEventRequest) returns (google.protobuf.Empty);
   rpc ListByDay(Day) returns (Events);

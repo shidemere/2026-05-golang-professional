@@ -159,7 +159,7 @@ func (x *Events) GetEvent() []*Event {
 	return nil
 }
 
-type CreateEventRequst struct {
+type CreateEventRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Title               string                 `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
 	ScheduledAt         *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=scheduled_at,json=scheduledAt,proto3" json:"scheduled_at,omitempty"`
@@ -171,20 +171,20 @@ type CreateEventRequst struct {
 	sizeCache           protoimpl.SizeCache
 }
 
-func (x *CreateEventRequst) Reset() {
-	*x = CreateEventRequst{}
+func (x *CreateEventRequest) Reset() {
+	*x = CreateEventRequest{}
 	mi := &file_api_grpc_EventService_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *CreateEventRequst) String() string {
+func (x *CreateEventRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*CreateEventRequst) ProtoMessage() {}
+func (*CreateEventRequest) ProtoMessage() {}
 
-func (x *CreateEventRequst) ProtoReflect() protoreflect.Message {
+func (x *CreateEventRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_api_grpc_EventService_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -196,47 +196,47 @@ func (x *CreateEventRequst) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use CreateEventRequst.ProtoReflect.Descriptor instead.
-func (*CreateEventRequst) Descriptor() ([]byte, []int) {
+// Deprecated: Use CreateEventRequest.ProtoReflect.Descriptor instead.
+func (*CreateEventRequest) Descriptor() ([]byte, []int) {
 	return file_api_grpc_EventService_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *CreateEventRequst) GetTitle() string {
+func (x *CreateEventRequest) GetTitle() string {
 	if x != nil {
 		return x.Title
 	}
 	return ""
 }
 
-func (x *CreateEventRequst) GetScheduledAt() *timestamppb.Timestamp {
+func (x *CreateEventRequest) GetScheduledAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.ScheduledAt
 	}
 	return nil
 }
 
-func (x *CreateEventRequst) GetFinishedAt() *timestamppb.Timestamp {
+func (x *CreateEventRequest) GetFinishedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.FinishedAt
 	}
 	return nil
 }
 
-func (x *CreateEventRequst) GetDescription() string {
+func (x *CreateEventRequest) GetDescription() string {
 	if x != nil {
 		return x.Description
 	}
 	return ""
 }
 
-func (x *CreateEventRequst) GetUserId() string {
+func (x *CreateEventRequest) GetUserId() string {
 	if x != nil {
 		return x.UserId
 	}
 	return ""
 }
 
-func (x *CreateEventRequst) GetNotifyBeforeSeconds() int64 {
+func (x *CreateEventRequest) GetNotifyBeforeSeconds() int64 {
 	if x != nil {
 		return x.NotifyBeforeSeconds
 	}
@@ -526,8 +526,8 @@ const file_api_grpc_EventService_proto_rawDesc = "" +
 	"\auser_id\x18\x06 \x01(\tR\x06userId\x122\n" +
 	"\x15notify_before_seconds\x18\a \x01(\x03R\x13notifyBeforeSeconds\",\n" +
 	"\x06Events\x12\"\n" +
-	"\x05event\x18\x01 \x03(\v2\f.event.EventR\x05event\"\x94\x02\n" +
-	"\x11CreateEventRequst\x12\x14\n" +
+	"\x05event\x18\x01 \x03(\v2\f.event.EventR\x05event\"\x95\x02\n" +
+	"\x12CreateEventRequest\x12\x14\n" +
 	"\x05title\x18\x01 \x01(\tR\x05title\x12=\n" +
 	"\fscheduled_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\vscheduledAt\x12;\n" +
 	"\vfinished_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
@@ -551,9 +551,9 @@ const file_api_grpc_EventService_proto_rawDesc = "" +
 	"\x04Week\x12.\n" +
 	"\x04week\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\x04week\"9\n" +
 	"\x05Month\x120\n" +
-	"\x05month\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\x05month2\xbd\x02\n" +
-	"\fEventService\x125\n" +
-	"\vCreateEvent\x12\x18.event.CreateEventRequst\x1a\f.event.Event\x126\n" +
+	"\x05month\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\x05month2\xbe\x02\n" +
+	"\fEventService\x126\n" +
+	"\vCreateEvent\x12\x19.event.CreateEventRequest\x1a\f.event.Event\x126\n" +
 	"\vUpdateEvent\x12\x19.event.UpdateEventRequest\x1a\f.event.Event\x12@\n" +
 	"\vDeleteEvent\x12\x19.event.DeleteEventRequest\x1a\x16.google.protobuf.Empty\x12&\n" +
 	"\tListByDay\x12\n" +
@@ -578,7 +578,7 @@ var file_api_grpc_EventService_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_api_grpc_EventService_proto_goTypes = []any{
 	(*Event)(nil),                 // 0: event.Event
 	(*Events)(nil),                // 1: event.Events
-	(*CreateEventRequst)(nil),     // 2: event.CreateEventRequst
+	(*CreateEventRequest)(nil),    // 2: event.CreateEventRequest
 	(*UpdateEventRequest)(nil),    // 3: event.UpdateEventRequest
 	(*DeleteEventRequest)(nil),    // 4: event.DeleteEventRequest
 	(*Day)(nil),                   // 5: event.Day
@@ -591,14 +591,14 @@ var file_api_grpc_EventService_proto_depIdxs = []int32{
 	8,  // 0: event.Event.scheduled_at:type_name -> google.protobuf.Timestamp
 	8,  // 1: event.Event.finished_at:type_name -> google.protobuf.Timestamp
 	0,  // 2: event.Events.event:type_name -> event.Event
-	8,  // 3: event.CreateEventRequst.scheduled_at:type_name -> google.protobuf.Timestamp
-	8,  // 4: event.CreateEventRequst.finished_at:type_name -> google.protobuf.Timestamp
+	8,  // 3: event.CreateEventRequest.scheduled_at:type_name -> google.protobuf.Timestamp
+	8,  // 4: event.CreateEventRequest.finished_at:type_name -> google.protobuf.Timestamp
 	8,  // 5: event.UpdateEventRequest.scheduled_at:type_name -> google.protobuf.Timestamp
 	8,  // 6: event.UpdateEventRequest.finished_at:type_name -> google.protobuf.Timestamp
 	8,  // 7: event.Day.day:type_name -> google.protobuf.Timestamp
 	8,  // 8: event.Week.week:type_name -> google.protobuf.Timestamp
 	8,  // 9: event.Month.month:type_name -> google.protobuf.Timestamp
-	2,  // 10: event.EventService.CreateEvent:input_type -> event.CreateEventRequst
+	2,  // 10: event.EventService.CreateEvent:input_type -> event.CreateEventRequest
 	3,  // 11: event.EventService.UpdateEvent:input_type -> event.UpdateEventRequest
 	4,  // 12: event.EventService.DeleteEvent:input_type -> event.DeleteEventRequest
 	5,  // 13: event.EventService.ListByDay:input_type -> event.Day

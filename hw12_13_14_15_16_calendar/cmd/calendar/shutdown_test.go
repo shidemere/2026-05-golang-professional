@@ -107,7 +107,7 @@ type pendingRPC struct {
 	started chan struct{}
 }
 
-func (s *pendingRPC) CreateEvent(ctx context.Context, _ *generated.CreateEventRequst) (*generated.Event, error) {
+func (s *pendingRPC) CreateEvent(ctx context.Context, _ *generated.CreateEventRequest) (*generated.Event, error) {
 	close(s.started)
 	<-ctx.Done()
 	return nil, ctx.Err()
@@ -136,7 +136,7 @@ func TestShutdownServersCancelsActiveGRPC(t *testing.T) {
 	defer conn.Close()
 	response := make(chan error, 1)
 	go func() {
-		_, err := generated.NewEventServiceClient(conn).CreateEvent(ctx, &generated.CreateEventRequst{})
+		_, err := generated.NewEventServiceClient(conn).CreateEvent(ctx, &generated.CreateEventRequest{})
 		response <- err
 	}()
 	select {

@@ -100,7 +100,15 @@ func FromUpdateRequest(req UpdateRequest) event.Event {
 
 // ToResponse maps Event to Response.
 func ToResponse(event event.Event) Response {
-	return Response(event)
+	return Response{
+		ID:                  event.ID,
+		Title:               event.Title,
+		ScheduledAt:         event.ScheduledAt,
+		FinishedAt:          event.FinishedAt,
+		Description:         event.Description,
+		UserID:              event.ID,
+		NotifyBeforeSeconds: event.NotifyBeforeSeconds,
+	}
 }
 
 // ToResponses maps slice of Events to slice of Responses.

@@ -58,15 +58,15 @@ func testClient(t *testing.T, calendars ...Calendar) (generated.EventServiceClie
 	return generated.NewEventServiceClient(conn), ctx
 }
 
-func createRequest() *generated.CreateEventRequst {
+func createRequest() *generated.CreateEventRequest {
 	start := time.Date(2026, 10, 18, 10, 0, 0, 0, time.UTC)
-	return &generated.CreateEventRequst{
+	return &generated.CreateEventRequest{
 		Title: "Meeting", ScheduledAt: timestamppb.New(start), FinishedAt: timestamppb.New(start.Add(time.Hour)),
 		UserId: "22222222-2222-4222-8222-222222222222", Description: "Agenda", NotifyBeforeSeconds: 60,
 	}
 }
 
-func updateRequest(id string, in *generated.CreateEventRequst) *generated.UpdateEventRequest {
+func updateRequest(id string, in *generated.CreateEventRequest) *generated.UpdateEventRequest {
 	return &generated.UpdateEventRequest{
 		Id: id, Title: in.Title, ScheduledAt: in.ScheduledAt, FinishedAt: in.FinishedAt,
 		UserId: in.UserId, Description: in.Description, NotifyBeforeSeconds: in.NotifyBeforeSeconds,
@@ -139,24 +139,24 @@ func TestGRPCValidation(t *testing.T) {
 	client, ctx := testClient(t)
 	cases := []struct {
 		name   string
-		change func(*generated.CreateEventRequst)
+		change func(*generated.CreateEventRequest)
 	}{
-		{"empty title", func(r *generated.CreateEventRequst) { r.Title = "" }},
-		{"missing start", func(r *generated.CreateEventRequst) { r.ScheduledAt = nil }},
-		{"missing end", func(r *generated.CreateEventRequst) { r.FinishedAt = nil }},
-		{"invalid start seconds", func(r *generated.CreateEventRequst) {
+		{"empty title", func(r *generated.CreateEventRequest) { r.Title = "" }},
+		{"missing start", func(r *generated.CreateEventRequest) { r.ScheduledAt = nil }},
+		{"missing end", func(r *generated.CreateEventRequest) { r.FinishedAt = nil }},
+		{"invalid start seconds", func(r *generated.CreateEventRequest) {
 			r.ScheduledAt = &timestamppb.Timestamp{Seconds: 253402300800}
 		}},
-		{"invalid end nanos", func(r *generated.CreateEventRequst) {
+		{"invalid end nanos", func(r *generated.CreateEventRequest) {
 			r.FinishedAt = &timestamppb.Timestamp{Seconds: r.FinishedAt.Seconds, Nanos: 1000000000}
 		}},
-		{"equal dates", func(r *generated.CreateEventRequst) { r.FinishedAt = r.ScheduledAt }},
-		{"reversed dates", func(r *generated.CreateEventRequst) {
+		{"equal dates", func(r *generated.CreateEventRequest) { r.FinishedAt = r.ScheduledAt }},
+		{"reversed dates", func(r *generated.CreateEventRequest) {
 			r.FinishedAt = timestamppb.New(r.ScheduledAt.AsTime().Add(-time.Hour))
 		}},
-		{"negative notification", func(r *generated.CreateEventRequst) { r.NotifyBeforeSeconds = -1 }},
-		{"missing user", func(r *generated.CreateEventRequst) { r.UserId = "" }},
-		{"invalid user", func(r *generated.CreateEventRequst) { r.UserId = "invalid" }},
+		{"negative notification", func(r *generated.CreateEventRequest) { r.NotifyBeforeSeconds = -1 }},
+		{"missing user", func(r *generated.CreateEventRequest) { r.UserId = "" }},
+		{"invalid user", func(r *generated.CreateEventRequest) { r.UserId = "invalid" }},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -363,7 +363,7 @@ func TestGRPCInvalidTimestamps(t *testing.T) {
 	}
 }
 
-func assertUpdatedEvent(t *testing.T, id string, updated *generated.Event, req *generated.CreateEventRequst) {
+func assertUpdatedEvent(t *testing.T, id string, updated *generated.Event, req *generated.CreateEventRequest) {
 	t.Helper()
 	if updated.Id != id ||
 		updated.Title != req.Title ||
@@ -391,7 +391,7 @@ func TestGRPCInvalidIDs(t *testing.T) {
 	}
 }
 
-func assertListedEvent(t *testing.T, events *generated.Events, id string, req *generated.CreateEventRequst) {
+func assertListedEvent(t *testing.T, events *generated.Events, id string, req *generated.CreateEventRequest) {
 	t.Helper()
 	if len(events.Event) != 1 ||
 		events.Event[0] == nil ||

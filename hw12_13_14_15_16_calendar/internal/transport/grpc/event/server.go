@@ -45,7 +45,7 @@ type Calendar interface {
 }
 
 // CreateEvent creates an event.
-func (s *Server) CreateEvent(ctx context.Context, request *generated.CreateEventRequst) (*generated.Event, error) {
+func (s *Server) CreateEvent(ctx context.Context, request *generated.CreateEventRequest) (*generated.Event, error) {
 	converted, err := fromCreateToEvent(request)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())

@@ -156,7 +156,7 @@ func (s *Server) getByDay(w http.ResponseWriter, r *http.Request) {
 
 	events, err := s.c.ListByDay(r.Context(), day)
 	if err != nil {
-		log.Warn("error with getting by day: ", err)
+		s.logger.Warn("error with getting by day: ", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
